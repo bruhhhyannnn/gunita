@@ -6,7 +6,8 @@ import { cloudflare } from '@cloudflare/vite-plugin'
 import { precacheManifest } from './vite.precache'
 
 export default defineConfig({
-  resolve: { tsconfigPaths: true },
+  // One copy of Yjs: two copies break its internal instanceof checks.
+  resolve: { tsconfigPaths: true, dedupe: ['yjs', 'y-protocols', 'lib0'] },
   plugins: [
     cloudflare({ viteEnvironment: { name: 'ssr' } }),
     tanstackStart(),

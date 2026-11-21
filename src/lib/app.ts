@@ -74,18 +74,20 @@ function shallowEqual(a: unknown, b: unknown): boolean {
 /** Selects from the workspace snapshot; re-renders only when the selected value changes (shallowly). */
 export function useWs<T>(selector: (s: Snapshot) => T): T {
   const { ws } = useApp()
-  const cache = useRef<{ snap: Snapshot; value: T } | null>(null)
+  const cache = useRef<{ snap: Snapshot; sel: (s: Snapshot) => T; value: T } | null>(null)
   const sel = useRef(selector)
   sel.current = selector
   const get = useCallback(() => {
     const snap = ws.getSnapshot()
-    if (cache.current && cache.current.snap === snap) return cache.current.value
-    const value = sel.current(snap)
+    const fn = sel.current
+    // Re-run when either the data or the selector changed (e.g. a different page id).
+    if (cache.current && cache.current.snap === snap && cache.current.sel === fn) return cache.current.value
+    const value = fn(snap)
     if (cache.current && shallowEqual(cache.current.value, value)) {
-      cache.current = { snap, value: cache.current.value }
+      cache.current = { snap, sel: fn, value: cache.current.value }
       return cache.current.value
     }
-    cache.current = { snap, value }
+    cache.current = { snap, sel: fn, value }
     return value
   }, [ws])
   return useSyncExternalStore(ws.subscribe, get, get)

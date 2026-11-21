@@ -54,7 +54,7 @@ export function createPageOfKind(
   if (kind === 'meeting') {
     return ws.createPage({
       kind,
-      parentId: opts.parentId ?? null,
+      parentId: opts.parentId ?? meetingsFolder(),
       title: opts.title ?? '',
       icon: '🗓️',
       meeting: { start: new Date().toISOString() },
@@ -62,6 +62,39 @@ export function createPageOfKind(
     })
   }
   return ws.createPage({ kind, parentId: opts.parentId ?? null, title: opts.title ?? '', after: opts.after })
+}
+
+/** Meeting notes live under a "Meetings" page so they don't clutter the sidebar. */
+export function meetingsFolder(): string {
+  const { ws } = getApp()
+  const existing = ws.children(null).find((p) => p.kind === 'page' && p.title === 'Meetings' && p.icon === '🗓️')
+  return existing?.id ?? ws.createPage({ title: 'Meetings', icon: '🗓️' })
+}
+
+export interface CalEvent {
+  id: string
+  title: string
+  start: string
+  end: string
+  allDay: boolean
+  location?: string
+  attendees: string[]
+  description?: string
+  link?: string
+}
+
+/** Opens the meeting note for a calendar event, creating it the first time. */
+export function meetingForEvent(e: CalEvent): string {
+  const { ws } = getApp()
+  const existing = Object.values(ws.getSnapshot().pages).find((p) => p.kind === 'meeting' && p.meeting?.eventId === e.id && !p.trashedAt)
+  if (existing) return existing.id
+  return ws.createPage({
+    kind: 'meeting',
+    parentId: meetingsFolder(),
+    title: e.title,
+    icon: '🗓️',
+    meeting: { start: e.start, end: e.end, attendees: e.attendees, location: e.location, eventId: e.id, eventLink: e.link },
+  })
 }
 
 export function pagePath(id: string) {

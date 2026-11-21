@@ -60,7 +60,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Uploaded files are immutable.
-  if (url.origin === location.origin && url.pathname.startsWith('/api/files/')) {
+  if (url.origin === location.origin && url.pathname.startsWith('/api/file/')) {
     event.respondWith(cacheFirst(req, IMAGES))
     return
   }

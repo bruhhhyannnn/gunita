@@ -1,5 +1,6 @@
 import type { Editor, JSONContent } from '@tiptap/core'
 import type { Node as PMNode } from '@tiptap/pm/model'
+import { Selection } from '@tiptap/pm/state'
 import { getApp } from '#/lib/app'
 import { newId } from '#/lib/ids'
 import { isoDate, parseIso } from '#/lib/dates'
@@ -204,8 +205,9 @@ export function findDay(editor: Editor, date: string): { node: PMNode; pos: numb
 export function focusToday(editor: Editor) {
   const day = findDay(editor, isoDate())
   if (!day) return
-  const end = day.pos + day.node.nodeSize - 2
-  editor.chain().focus().setTextSelection(Math.max(day.pos + 1, end - 1)).run()
+  const $end = editor.state.doc.resolve(day.pos + day.node.nodeSize - 1)
+  editor.view.dispatch(editor.state.tr.setSelection(Selection.near($end, -1)))
+  editor.view.focus()
   const dom = editor.view.nodeDOM(day.pos) as HTMLElement | null
   dom?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }

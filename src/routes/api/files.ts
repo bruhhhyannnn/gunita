@@ -20,7 +20,7 @@ export const Route = createFileRoute('/api/files')({
         await env.DB.prepare('INSERT INTO files (key, user_id, content_type, size, created_at) VALUES (?, ?, ?, ?, ?)')
           .bind(key, user.id, type, file.size, Date.now())
           .run()
-        return Response.json({ url: `/api/files/${key}`, key, contentType: type, name: file.name, size: file.size })
+        return Response.json({ url: `/api/file/${key}`, key, contentType: type, name: file.name, size: file.size })
       }),
     },
   },

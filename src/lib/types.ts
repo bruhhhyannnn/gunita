@@ -69,7 +69,9 @@ export interface MeetingInfo {
   attendees?: string[]
   location?: string
   eventId?: string
+  eventLink?: string
   finishedAt?: number
+  templated?: boolean
 }
 
 // ---------- Pages ----------

@@ -4,7 +4,7 @@ import { error } from '#/server/util'
 
 // Keys contain a random UUID, so links are unguessable. That keeps images
 // working on read-only public pages without a session.
-export const Route = createFileRoute('/api/files/$')({
+export const Route = createFileRoute('/api/file/$')({
   server: {
     handlers: {
       GET: async ({ params }) => {

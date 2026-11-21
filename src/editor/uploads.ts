@@ -4,6 +4,7 @@ import { toast } from '#/components/ui/toast'
 
 export interface Uploaded {
   url: string
+  key: string
   name: string
   contentType: string
   size: number

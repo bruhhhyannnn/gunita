@@ -8,6 +8,7 @@ import type { PageKind } from '#/lib/types'
 import { PageIcon } from '#/components/PageIcon'
 import { useOpenPage } from '#/components/Sidebar'
 import { setUi } from '#/lib/ui'
+import { UpcomingMeetings } from '#/components/meeting/UpcomingMeetings'
 
 export const Route = createFileRoute('/_app/')({
   component: Home,
@@ -106,6 +107,11 @@ function Home() {
               })}
             </div>
           )}
+        </section>
+
+        <section className="mt-10">
+          <h2 className="mb-3 text-sm font-medium text-muted">Meetings</h2>
+          <UpcomingMeetings />
         </section>
 
         <section className="mt-10">
