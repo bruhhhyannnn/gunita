@@ -59,9 +59,9 @@ export class SyncEngine {
   start() {
     const kick = () => this.schedule(0)
     window.addEventListener('online', kick)
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') kick()
-    })
+    // Sync when coming back to the app, and flush right away when leaving it.
+    document.addEventListener('visibilitychange', kick)
+    window.addEventListener('pagehide', kick)
     this.interval = setInterval(() => {
       if (document.visibilityState === 'visible') kick()
     }, 20_000)
@@ -93,9 +93,18 @@ export class SyncEngine {
     this.listeners.forEach((l) => l())
   }
 
+  private dueAt = 0
+
+  /** Runs a sync in `ms`, unless one is already due sooner (so constant typing can't starve it). */
   schedule(ms: number) {
+    const due = Date.now() + ms
+    if (this.timer && this.dueAt <= due) return
     if (this.timer) clearTimeout(this.timer)
-    this.timer = setTimeout(() => void this.run(), ms)
+    this.dueAt = due
+    this.timer = setTimeout(() => {
+      this.timer = null
+      void this.run()
+    }, ms)
   }
 
   private async persistSets() {
