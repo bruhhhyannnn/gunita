@@ -19,10 +19,15 @@ import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as ApiMeRouteImport } from './routes/api/me'
 import { Route as ApiSyncRouteImport } from './routes/api/sync'
 import { Route as AppPPageIdRouteImport } from './routes/_app/p.$pageId'
+import { Route as ApiAiAskRouteImport } from './routes/api/ai/ask'
+import { Route as ApiAiCompleteRouteImport } from './routes/api/ai/complete'
+import { Route as ApiAiPlanRouteImport } from './routes/api/ai/plan'
+import { Route as ApiAiReportRouteImport } from './routes/api/ai/report'
 import { Route as ApiAuthDevRouteImport } from './routes/api/auth/dev'
 import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
 import { Route as ApiAuthGoogleCallbackRouteImport } from './routes/api/auth/google-callback'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiCalendarEventsRouteImport } from './routes/api/calendar/events'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
 
 const AppRoute = AppRouteImport.update({
@@ -74,6 +79,26 @@ const AppPPageIdRoute = AppPPageIdRouteImport.update({
   path: '/p/$pageId',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiAiAskRoute = ApiAiAskRouteImport.update({
+  id: '/api/ai/ask',
+  path: '/api/ai/ask',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiCompleteRoute = ApiAiCompleteRouteImport.update({
+  id: '/api/ai/complete',
+  path: '/api/ai/complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiPlanRoute = ApiAiPlanRouteImport.update({
+  id: '/api/ai/plan',
+  path: '/api/ai/plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiReportRoute = ApiAiReportRouteImport.update({
+  id: '/api/ai/report',
+  path: '/api/ai/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthDevRoute = ApiAuthDevRouteImport.update({
   id: '/api/auth/dev',
   path: '/api/auth/dev',
@@ -94,6 +119,11 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCalendarEventsRoute = ApiCalendarEventsRouteImport.update({
+  id: '/api/calendar/events',
+  path: '/api/calendar/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
   id: '/$',
   path: '/$',
@@ -110,10 +140,15 @@ export interface FileRoutesByFullPath {
   '/api/me': typeof ApiMeRoute
   '/api/sync': typeof ApiSyncRoute
   '/p/$pageId': typeof AppPPageIdRoute
+  '/api/ai/ask': typeof ApiAiAskRoute
+  '/api/ai/complete': typeof ApiAiCompleteRoute
+  '/api/ai/plan': typeof ApiAiPlanRoute
+  '/api/ai/report': typeof ApiAiReportRoute
   '/api/auth/dev': typeof ApiAuthDevRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/api/auth/google-callback': typeof ApiAuthGoogleCallbackRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/calendar/events': typeof ApiCalendarEventsRoute
   '/api/files/$': typeof ApiFilesSplatRoute
 }
 export interface FileRoutesByTo {
@@ -126,10 +161,15 @@ export interface FileRoutesByTo {
   '/api/sync': typeof ApiSyncRoute
   '/': typeof AppIndexRoute
   '/p/$pageId': typeof AppPPageIdRoute
+  '/api/ai/ask': typeof ApiAiAskRoute
+  '/api/ai/complete': typeof ApiAiCompleteRoute
+  '/api/ai/plan': typeof ApiAiPlanRoute
+  '/api/ai/report': typeof ApiAiReportRoute
   '/api/auth/dev': typeof ApiAuthDevRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/api/auth/google-callback': typeof ApiAuthGoogleCallbackRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/calendar/events': typeof ApiCalendarEventsRoute
   '/api/files/$': typeof ApiFilesSplatRoute
 }
 export interface FileRoutesById {
@@ -144,10 +184,15 @@ export interface FileRoutesById {
   '/api/sync': typeof ApiSyncRoute
   '/_app/': typeof AppIndexRoute
   '/_app/p/$pageId': typeof AppPPageIdRoute
+  '/api/ai/ask': typeof ApiAiAskRoute
+  '/api/ai/complete': typeof ApiAiCompleteRoute
+  '/api/ai/plan': typeof ApiAiPlanRoute
+  '/api/ai/report': typeof ApiAiReportRoute
   '/api/auth/dev': typeof ApiAuthDevRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/api/auth/google-callback': typeof ApiAuthGoogleCallbackRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/calendar/events': typeof ApiCalendarEventsRoute
   '/api/files/$': typeof ApiFilesSplatRoute
 }
 export interface FileRouteTypes {
@@ -162,10 +207,15 @@ export interface FileRouteTypes {
     | '/api/me'
     | '/api/sync'
     | '/p/$pageId'
+    | '/api/ai/ask'
+    | '/api/ai/complete'
+    | '/api/ai/plan'
+    | '/api/ai/report'
     | '/api/auth/dev'
     | '/api/auth/google'
     | '/api/auth/google-callback'
     | '/api/auth/logout'
+    | '/api/calendar/events'
     | '/api/files/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -178,10 +228,15 @@ export interface FileRouteTypes {
     | '/api/sync'
     | '/'
     | '/p/$pageId'
+    | '/api/ai/ask'
+    | '/api/ai/complete'
+    | '/api/ai/plan'
+    | '/api/ai/report'
     | '/api/auth/dev'
     | '/api/auth/google'
     | '/api/auth/google-callback'
     | '/api/auth/logout'
+    | '/api/calendar/events'
     | '/api/files/$'
   id:
     | '__root__'
@@ -195,10 +250,15 @@ export interface FileRouteTypes {
     | '/api/sync'
     | '/_app/'
     | '/_app/p/$pageId'
+    | '/api/ai/ask'
+    | '/api/ai/complete'
+    | '/api/ai/plan'
+    | '/api/ai/report'
     | '/api/auth/dev'
     | '/api/auth/google'
     | '/api/auth/google-callback'
     | '/api/auth/logout'
+    | '/api/calendar/events'
     | '/api/files/$'
   fileRoutesById: FileRoutesById
 }
@@ -209,10 +269,15 @@ export interface RootRouteChildren {
   ApiFilesRoute: typeof ApiFilesRouteWithChildren
   ApiMeRoute: typeof ApiMeRoute
   ApiSyncRoute: typeof ApiSyncRoute
+  ApiAiAskRoute: typeof ApiAiAskRoute
+  ApiAiCompleteRoute: typeof ApiAiCompleteRoute
+  ApiAiPlanRoute: typeof ApiAiPlanRoute
+  ApiAiReportRoute: typeof ApiAiReportRoute
   ApiAuthDevRoute: typeof ApiAuthDevRoute
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRoute
   ApiAuthGoogleCallbackRoute: typeof ApiAuthGoogleCallbackRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiCalendarEventsRoute: typeof ApiCalendarEventsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -287,6 +352,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPPageIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/ai/ask': {
+      id: '/api/ai/ask'
+      path: '/api/ai/ask'
+      fullPath: '/api/ai/ask'
+      preLoaderRoute: typeof ApiAiAskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/complete': {
+      id: '/api/ai/complete'
+      path: '/api/ai/complete'
+      fullPath: '/api/ai/complete'
+      preLoaderRoute: typeof ApiAiCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/plan': {
+      id: '/api/ai/plan'
+      path: '/api/ai/plan'
+      fullPath: '/api/ai/plan'
+      preLoaderRoute: typeof ApiAiPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/report': {
+      id: '/api/ai/report'
+      path: '/api/ai/report'
+      fullPath: '/api/ai/report'
+      preLoaderRoute: typeof ApiAiReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/dev': {
       id: '/api/auth/dev'
       path: '/api/auth/dev'
@@ -313,6 +406,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/logout'
       fullPath: '/api/auth/logout'
       preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/calendar/events': {
+      id: '/api/calendar/events'
+      path: '/api/calendar/events'
+      fullPath: '/api/calendar/events'
+      preLoaderRoute: typeof ApiCalendarEventsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/files/$': {
@@ -360,10 +460,15 @@ const rootRouteChildren: RootRouteChildren = {
   ApiFilesRoute: ApiFilesRouteWithChildren,
   ApiMeRoute: ApiMeRoute,
   ApiSyncRoute: ApiSyncRoute,
+  ApiAiAskRoute: ApiAiAskRoute,
+  ApiAiCompleteRoute: ApiAiCompleteRoute,
+  ApiAiPlanRoute: ApiAiPlanRoute,
+  ApiAiReportRoute: ApiAiReportRoute,
   ApiAuthDevRoute: ApiAuthDevRoute,
   ApiAuthGoogleRoute: ApiAuthGoogleRoute,
   ApiAuthGoogleCallbackRoute: ApiAuthGoogleCallbackRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiCalendarEventsRoute: ApiCalendarEventsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

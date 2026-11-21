@@ -319,6 +319,33 @@ export function moveTaskToDay(editor: Editor, pos: number, date: string) {
   editor.view.dispatch(tr)
 }
 
+/** Adds a task at the end of today's list (used when accepting AI suggestions). */
+export function appendTaskToday(editor: Editor, text: string, attrs: Record<string, unknown> = {}) {
+  const day = findDay(editor, isoDate())
+  if (!day) return false
+  const { schema } = editor.state
+  const item = schema.nodes.taskItem.create(
+    { checked: false, taskId: newId(), since: isoDate(), ...attrs },
+    schema.nodes.paragraph.create(null, text ? schema.text(text) : null),
+  )
+  let lastList: { node: PMNode; pos: number } | null = null
+  day.node.forEach((child, off) => {
+    if (child.type.name === 'taskList') lastList = { node: child, pos: day.pos + 1 + off }
+  })
+  const tr = editor.state.tr
+  if (lastList) {
+    const l = lastList as { node: PMNode; pos: number }
+    // Reuse a trailing empty task instead of leaving a blank line above the new one.
+    const last = l.node.lastChild
+    if (last && last.textContent === '' && last.childCount === 1) {
+      const lastPos = l.pos + l.node.nodeSize - 1 - last.nodeSize
+      tr.replaceWith(lastPos, lastPos + last.nodeSize, item)
+    } else tr.insert(l.pos + l.node.nodeSize - 1, item)
+  } else tr.insert(day.pos + day.node.nodeSize - 1, schema.nodes.taskList.create(null, [item]))
+  editor.view.dispatch(tr)
+  return true
+}
+
 // ---------- Accomplishment report ----------
 
 export interface DoneTask {

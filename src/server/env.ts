@@ -11,6 +11,8 @@ export interface Env {
   GOOGLE_CLIENT_ID?: string
   GOOGLE_CLIENT_SECRET?: string
   ANTHROPIC_API_KEY?: string
+  /** Local testing only: point the Anthropic SDK at a mock server. */
+  ANTHROPIC_BASE_URL?: string
   /** Used to encrypt stored Google refresh tokens. Any long random string. */
   SESSION_SECRET?: string
   /** Set to "true" in .dev.vars to enable the passwordless local login. Never set in production. */
