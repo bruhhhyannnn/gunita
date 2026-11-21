@@ -11,12 +11,25 @@ export function TabBar() {
   const { tabs, active } = useTabs()
   const navigate = useNavigate()
   const sidebarOpen = useUi((s) => s.sidebarOpen)
+  const mobile = useUi((s) => s.mobile)
   const href = useRouterState({ select: (s) => s.location.href })
 
   useEffect(() => syncActiveTab(href), [href])
 
   const go = (t: Tab | null | undefined) => {
     if (t) void navigate({ href: t.path })
+  }
+
+  // Phones get a slim bar with the menu button; tabs make little sense on a small screen.
+  if (mobile) {
+    return (
+      <div className="flex h-11 flex-none items-center gap-1 border-b border-line bg-sidebar px-2" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <button className="grid h-9 w-9 place-items-center rounded-md text-muted hover:bg-hover" onClick={() => setUi({ sidebarOpen: true })} aria-label="Open menu">
+          <MenuIcon className="h-5 w-5" />
+        </button>
+        <span className="font-semibold">Gunita</span>
+      </div>
+    )
   }
 
   return (

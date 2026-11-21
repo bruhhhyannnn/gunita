@@ -1,19 +1,28 @@
 // Gunita service worker: makes the app open offline.
-const SHELL = 'gunita-shell-v1'
-const ASSETS = 'gunita-assets-v1'
+const SHELL = 'gunita-shell-v2'
+const ASSETS = 'gunita-assets-v2'
 const IMAGES = 'gunita-images-v1'
+
+let lastVersion = null
+
+/** Caches every built file so all screens work offline, re-checking after each deploy. */
+async function precache() {
+  try {
+    const res = await fetch('/precache-manifest.json', { cache: 'no-store' })
+    const { version, files } = await res.json()
+    if (version === lastVersion) return
+    const cache = await caches.open(ASSETS)
+    await Promise.allSettled(files.map((f) => cache.match(f).then((hit) => hit || cache.add(f))))
+    lastVersion = version
+  } catch (e) {
+    /* offline: runtime caching still works */
+  }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
-      const cache = await caches.open(ASSETS)
-      try {
-        const res = await fetch('/precache-manifest.json', { cache: 'no-store' })
-        const { files } = await res.json()
-        await Promise.allSettled(files.map((f) => cache.add(f)))
-      } catch (e) {
-        /* offline during install; runtime caching still works */
-      }
+      await precache()
       const shell = await caches.open(SHELL)
       await shell.add(new Request('/', { credentials: 'same-origin' })).catch(() => {})
       await self.skipWaiting()
@@ -49,6 +58,7 @@ self.addEventListener('fetch', (event) => {
           if (res.ok) {
             const shell = await caches.open(SHELL)
             shell.put('/', res.clone())
+            event.waitUntil(precache())
           }
           return res
         } catch {
@@ -79,7 +89,8 @@ self.addEventListener('fetch', (event) => {
 })
 
 async function cacheFirst(req, name) {
-  const hit = await caches.match(req)
+  // ignoreVary: module scripts and plain fetches send different headers for the same file.
+  const hit = await caches.match(req, { ignoreVary: true })
   if (hit) return hit
   const res = await fetch(req)
   if (res.ok) (await caches.open(name)).put(req, res.clone())

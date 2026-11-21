@@ -52,7 +52,7 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
     const parts = [
       r.template && `${r.template} from your template`,
       r.carried && `${r.carried} carried over`,
-      r.inbox && `${r.inbox} from meetings`,
+      r.inbox && `${r.inbox} from your inbox`,
     ].filter(Boolean)
     toast(parts.length ? `Today started: ${parts.join(', ')}.` : 'Today started.', {
       label: 'Undo',
@@ -107,7 +107,7 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
               : `Start today with ${[
                   preview.template && `${preview.template} template task${preview.template === 1 ? '' : 's'}`,
                   preview.carried && `${preview.carried} unfinished from before`,
-                  preview.inbox && `${preview.inbox} from meetings`,
+                  preview.inbox && `${preview.inbox} waiting in your inbox`,
                 ]
                   .filter(Boolean)
                   .join(', ')}.`}
@@ -121,7 +121,7 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
       {started && editor && waiting.length > 0 && (
         <div className="mt-3 flex items-center gap-3 rounded-lg border border-line bg-subtle px-4 py-2.5 text-sm">
           <span className="flex-1">
-            {waiting.length} action item{waiting.length === 1 ? '' : 's'} from meetings: {waiting.slice(0, 2).map((w) => `“${w.text}”`).join(', ')}
+            {waiting.length} task{waiting.length === 1 ? '' : 's'} waiting (meetings, quick capture): {waiting.slice(0, 2).map((w) => `“${w.text}”`).join(', ')}
             {waiting.length > 2 ? '…' : ''}
           </span>
           <button

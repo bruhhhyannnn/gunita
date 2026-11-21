@@ -5,6 +5,7 @@ export interface UiState {
   sidebarWidth: number
   paletteOpen: boolean
   askOpen: boolean
+  captureOpen: boolean
   mobile: boolean
   expanded: Record<string, boolean>
 }
@@ -24,6 +25,7 @@ function initial(): UiState {
     sidebarWidth: saved.sidebarWidth ?? 248,
     paletteOpen: false,
     askOpen: false,
+    captureOpen: false,
     mobile,
     expanded: saved.expanded ?? {},
   }

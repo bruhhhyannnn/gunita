@@ -45,7 +45,7 @@ function Home() {
     if (search.start === 'today' && lists[0]) {
       void navigate({ to: '/p/$pageId', params: { pageId: lists[0].id }, search: { start: 'today' } as never })
     }
-    if (search.capture) setUi({ paletteOpen: true })
+    if (search.capture) setUi({ captureOpen: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.start, search.capture])
 

@@ -3,7 +3,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from '@cloudflare/vite-plugin'
-import { precacheManifest } from './vite.precache'
+import { precacheManifest } from './vite.precache.ts'
 
 export default defineConfig({
   // One copy of Yjs: two copies break its internal instanceof checks.

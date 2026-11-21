@@ -5,7 +5,10 @@ import appCss from '../styles.css?url'
 // Applies the saved theme before first paint so there's no light/dark flash.
 const themeScript = `(function(){try{var t=localStorage.getItem('gunita:theme')||'system';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`
 
-const swScript = `if('serviceWorker' in navigator && location.hostname!=='localhost' && location.hostname!=='127.0.0.1'){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`
+// The service worker (offline support) only runs in production builds, never in `vite dev`.
+const swScript = import.meta.env.PROD
+  ? `if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`
+  : ''
 
 export const Route = createRootRoute({
   head: () => ({
@@ -38,7 +41,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
-        <script dangerouslySetInnerHTML={{ __html: swScript }} />
+        {swScript && <script dangerouslySetInnerHTML={{ __html: swScript }} />}
         <Scripts />
       </body>
     </html>

@@ -7,10 +7,12 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
-    "generate-routes": "vite build",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "pnpm run build && wrangler deploy"
+    "deploy": "pnpm run build && wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "db:migrate:local": "wrangler d1 migrations apply gunita --local",
+    "db:migrate:remote": "wrangler d1 migrations apply gunita --remote"
   },
   "dependencies": {
     "3d-force-graph": "^1.80.2",

@@ -17,7 +17,9 @@ import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as ApiArtRouteImport } from './routes/api/art'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as ApiMeRouteImport } from './routes/api/me'
+import { Route as ApiShareRouteImport } from './routes/api/share'
 import { Route as ApiSyncRouteImport } from './routes/api/sync'
+import { Route as SSplatRouteImport } from './routes/s/$'
 import { Route as AppPPageIdRouteImport } from './routes/_app/p.$pageId'
 import { Route as ApiAiAskRouteImport } from './routes/api/ai/ask'
 import { Route as ApiAiCompleteRouteImport } from './routes/api/ai/complete'
@@ -72,9 +74,19 @@ const ApiMeRoute = ApiMeRouteImport.update({
   path: '/api/me',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiShareRoute = ApiShareRouteImport.update({
+  id: '/api/share',
+  path: '/api/share',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSyncRoute = ApiSyncRouteImport.update({
   id: '/api/sync',
   path: '/api/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SSplatRoute = SSplatRouteImport.update({
+  id: '/s/$',
+  path: '/s/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppPPageIdRoute = AppPPageIdRouteImport.update({
@@ -156,7 +168,9 @@ export interface FileRoutesByFullPath {
   '/api/art': typeof ApiArtRoute
   '/api/files': typeof ApiFilesRoute
   '/api/me': typeof ApiMeRoute
+  '/api/share': typeof ApiShareRoute
   '/api/sync': typeof ApiSyncRoute
+  '/s/$': typeof SSplatRoute
   '/p/$pageId': typeof AppPPageIdRoute
   '/api/ai/ask': typeof ApiAiAskRoute
   '/api/ai/complete': typeof ApiAiCompleteRoute
@@ -179,7 +193,9 @@ export interface FileRoutesByTo {
   '/api/art': typeof ApiArtRoute
   '/api/files': typeof ApiFilesRoute
   '/api/me': typeof ApiMeRoute
+  '/api/share': typeof ApiShareRoute
   '/api/sync': typeof ApiSyncRoute
+  '/s/$': typeof SSplatRoute
   '/': typeof AppIndexRoute
   '/p/$pageId': typeof AppPPageIdRoute
   '/api/ai/ask': typeof ApiAiAskRoute
@@ -205,7 +221,9 @@ export interface FileRoutesById {
   '/api/art': typeof ApiArtRoute
   '/api/files': typeof ApiFilesRoute
   '/api/me': typeof ApiMeRoute
+  '/api/share': typeof ApiShareRoute
   '/api/sync': typeof ApiSyncRoute
+  '/s/$': typeof SSplatRoute
   '/_app/': typeof AppIndexRoute
   '/_app/p/$pageId': typeof AppPPageIdRoute
   '/api/ai/ask': typeof ApiAiAskRoute
@@ -232,7 +250,9 @@ export interface FileRouteTypes {
     | '/api/art'
     | '/api/files'
     | '/api/me'
+    | '/api/share'
     | '/api/sync'
+    | '/s/$'
     | '/p/$pageId'
     | '/api/ai/ask'
     | '/api/ai/complete'
@@ -255,7 +275,9 @@ export interface FileRouteTypes {
     | '/api/art'
     | '/api/files'
     | '/api/me'
+    | '/api/share'
     | '/api/sync'
+    | '/s/$'
     | '/'
     | '/p/$pageId'
     | '/api/ai/ask'
@@ -280,7 +302,9 @@ export interface FileRouteTypes {
     | '/api/art'
     | '/api/files'
     | '/api/me'
+    | '/api/share'
     | '/api/sync'
+    | '/s/$'
     | '/_app/'
     | '/_app/p/$pageId'
     | '/api/ai/ask'
@@ -304,7 +328,9 @@ export interface RootRouteChildren {
   ApiArtRoute: typeof ApiArtRoute
   ApiFilesRoute: typeof ApiFilesRoute
   ApiMeRoute: typeof ApiMeRoute
+  ApiShareRoute: typeof ApiShareRoute
   ApiSyncRoute: typeof ApiSyncRoute
+  SSplatRoute: typeof SSplatRoute
   ApiAiAskRoute: typeof ApiAiAskRoute
   ApiAiCompleteRoute: typeof ApiAiCompleteRoute
   ApiAiExtractRoute: typeof ApiAiExtractRoute
@@ -378,11 +404,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/share': {
+      id: '/api/share'
+      path: '/api/share'
+      fullPath: '/api/share'
+      preLoaderRoute: typeof ApiShareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/sync': {
       id: '/api/sync'
       path: '/api/sync'
       fullPath: '/api/sync'
       preLoaderRoute: typeof ApiSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/s/$': {
+      id: '/s/$'
+      path: '/s/$'
+      fullPath: '/s/$'
+      preLoaderRoute: typeof SSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/p/$pageId': {
@@ -508,7 +548,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiArtRoute: ApiArtRoute,
   ApiFilesRoute: ApiFilesRoute,
   ApiMeRoute: ApiMeRoute,
+  ApiShareRoute: ApiShareRoute,
   ApiSyncRoute: ApiSyncRoute,
+  SSplatRoute: SSplatRoute,
   ApiAiAskRoute: ApiAiAskRoute,
   ApiAiCompleteRoute: ApiAiCompleteRoute,
   ApiAiExtractRoute: ApiAiExtractRoute,

@@ -15,7 +15,11 @@
     }
   ],
   "r2_buckets": [{ "binding": "FILES", "bucket_name": "gunita-files" }],
+  // Optional: free Workers AI models for inline suggestions (Settings > AI).
+  // Uncomment to enable. Local dev then needs `wrangler login`.
+  // "ai": { "binding": "AI" },
   "vars": {
     "APP_NAME": "Gunita"
+    // "APP_URL": "https://gunita.<your-subdomain>.workers.dev"
   }
 }

@@ -58,6 +58,8 @@ function slashItems(editor: Editor, ctx: EditorContext): (SuggestItem & { keywor
       run: () => {
         const id = createPageOfKind('page', { parentId: ctx.pageId })
         chain().insertContent({ type: 'pageEmbed', attrs: { id } }).run()
+        // Like Notion: open the new sub-page right away.
+        setTimeout(() => window.dispatchEvent(new CustomEvent('gunita:open-page', { detail: id })), 50)
       },
     },
     {

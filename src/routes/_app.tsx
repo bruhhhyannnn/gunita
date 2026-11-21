@@ -10,6 +10,7 @@ import { CommandPalette } from '#/components/CommandPalette'
 import { Toaster } from '#/components/ui/toast'
 import { useTheme } from '#/lib/theme'
 import { AskPanel } from '#/components/AskPanel'
+import { QuickCapture } from '#/components/QuickCapture'
 
 export const Route = createFileRoute('/_app')({ component: AppLayout })
 
@@ -65,6 +66,7 @@ function AppLayout() {
 
 function Shell() {
   useTheme()
+  const navigate = useNavigate()
   const askOpen = useUi((s) => s.askOpen)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -75,14 +77,22 @@ function Shell() {
       } else if (mod && e.key === '\\') {
         e.preventDefault()
         setUi((s) => ({ sidebarOpen: !s.sidebarOpen }))
+      } else if (mod && e.shiftKey && e.key.toLowerCase() === 'e') {
+        e.preventDefault()
+        setUi({ captureOpen: true })
       } else if (mod && e.key.toLowerCase() === 'j') {
         e.preventDefault()
         setUi((s) => ({ askOpen: !s.askOpen }))
       }
     }
+    const onOpen = (e: Event) => void navigate({ to: '/p/$pageId', params: { pageId: (e as CustomEvent<string>).detail } })
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+    window.addEventListener('gunita:open-page', onOpen)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('gunita:open-page', onOpen)
+    }
+  }, [navigate])
 
   return (
     <div className="flex h-dvh overflow-hidden">
@@ -95,6 +105,7 @@ function Shell() {
       </main>
       {askOpen && <AskPanel />}
       <CommandPalette />
+      <QuickCapture />
       <Toaster />
     </div>
   )

@@ -21,7 +21,6 @@ import { timeAgo } from '#/lib/dates'
 import type { PageMeta } from '#/lib/types'
 import { PageEditor } from '#/editor/PageEditor'
 import { exportPageMarkdown } from '#/lib/markdown'
-import { setUi } from '#/lib/ui'
 import { PageIcon } from './PageIcon'
 import { EmojiPicker } from './EmojiPicker'
 import { CoverPicker } from './CoverPicker'
@@ -186,9 +185,6 @@ function TopBar({ page }: { page: PageMeta }) {
           )}
         </MenuContent>
       </Menu>
-      <button className="ml-1 grid h-7 w-7 place-items-center rounded-md text-muted hover:bg-hover sm:hidden" onClick={() => setUi({ sidebarOpen: true })}>
-        ☰
-      </button>
     </div>
   )
 }

@@ -1,0 +1,8 @@
+# Copy to .dev.vars for local development (never commit .dev.vars).
+DEV_LOGIN=true
+SESSION_SECRET=change-me-to-a-long-random-string
+# Google sign-in (optional locally; DEV_LOGIN works without it)
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
+# Claude (needed for AI features)
+# ANTHROPIC_API_KEY=
