@@ -11,21 +11,24 @@ import { TaskItem } from '@tiptap/extension-list'
  */
 export const GunitaTaskItem = TaskItem.extend({
   addAttributes() {
-    const attr = (name: string, parse?: (v: string | null) => unknown) => ({
+    // keepOnSplit: false, so pressing Enter on a task starts a brand-new task
+    // instead of cloning the previous one's id, age and template link.
+    const attr = (key: string, dataName: string, parse?: (v: string | null) => unknown) => ({
       default: null,
-      parseHTML: (el: HTMLElement) => (parse ? parse(el.getAttribute(`data-${name}`)) : el.getAttribute(`data-${name}`)),
-      renderHTML: (attrs: Record<string, unknown>) => (attrs[name] == null ? {} : { [`data-${name}`]: String(attrs[name]) }),
+      keepOnSplit: false,
+      parseHTML: (el: HTMLElement) => (parse ? parse(el.getAttribute(`data-${dataName}`)) : el.getAttribute(`data-${dataName}`)),
+      renderHTML: (attrs: Record<string, unknown>) => (attrs[key] == null ? {} : { [`data-${dataName}`]: String(attrs[key]) }),
     })
     return {
       ...this.parent?.(),
-      taskId: attr('task-id'),
-      since: attr('since'),
-      carry: attr('carry', (v) => (v ? Number(v) : null)),
-      status: attr('status'),
-      movedTo: attr('moved-to'),
-      snoozeUntil: attr('snooze-until'),
-      templateId: attr('template-id'),
-      source: attr('source'),
+      taskId: attr('taskId', 'task-id'),
+      since: attr('since', 'since'),
+      carry: attr('carry', 'carry', (v) => (v ? Number(v) : null)),
+      status: attr('status', 'status'),
+      movedTo: attr('movedTo', 'moved-to'),
+      snoozeUntil: attr('snoozeUntil', 'snooze-until'),
+      templateId: attr('templateId', 'template-id'),
+      source: attr('source', 'source'),
     }
   },
 }).configure({ nested: true })

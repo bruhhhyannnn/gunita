@@ -16,6 +16,7 @@ import { DatabaseEmbed } from './databaseEmbed'
 import { GunitaTaskItem } from './taskItem'
 import { Mentions, SlashCommands, type EditorContext } from './commands'
 import { ImageUploads } from './uploads'
+import { TodoDay } from '#/todo/todoDay'
 
 const lowlight = createLowlight(common)
 
@@ -53,6 +54,7 @@ export function buildExtensions(opts: { doc: Y.Doc; ctx: EditorContext; extra?: 
     PageLink,
     PageEmbed,
     DatabaseEmbed,
+    TodoDay,
     SlashCommands.configure({ ctx: opts.ctx }),
     Mentions.configure({ ctx: opts.ctx }),
     ImageUploads,

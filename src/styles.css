@@ -405,3 +405,99 @@ button {
 .animate-pop {
   animation: fade-in 120ms ease-out;
 }
+
+/* ---------- TODO lists ---------- */
+.todo-day {
+  margin: 18px 0 6px;
+}
+.todo-day-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+.todo-day-toggle {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--text-faint);
+  background: none;
+  border: none;
+}
+.todo-day-toggle:hover { background: var(--bg-hover); }
+.todo-day-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+.todo-day:not(.is-today):not(.is-someday) .todo-day-title {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.todo-day-date {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.todo-day-progress {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.todo-day-progress.is-done { color: #2e9f6b; }
+.todo-day.is-today .todo-day-header { border-bottom-color: var(--accent); }
+
+.task-note {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11.5px;
+  line-height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  white-space: nowrap;
+  vertical-align: 1px;
+  user-select: none;
+  text-decoration: none !important;
+}
+.n-moved, .n-dropped, .n-snoozed { color: var(--text-faint); background: var(--bg-hover); }
+.n-carry.u-gray { color: var(--text-muted); background: var(--bg-hover); }
+.n-carry.u-yellow { color: #9a6700; background: rgba(233, 168, 0, 0.18); }
+.n-carry.u-orange { color: #b35900; background: rgba(245, 93, 0, 0.18); }
+.n-carry.u-red { color: #d1242f; background: rgba(255, 0, 26, 0.15); font-weight: 600; }
+.dark .n-carry.u-yellow { color: #f2cc60; }
+.dark .n-carry.u-orange { color: #ffa657; }
+.dark .n-carry.u-red { color: #ff7b72; }
+
+.task-menu-btn {
+  margin-left: 6px;
+  width: 20px;
+  height: 18px;
+  line-height: 14px;
+  border-radius: 4px;
+  border: none;
+  background: none;
+  color: var(--text-faint);
+  opacity: 0;
+  vertical-align: 1px;
+}
+.gunita-editor li:hover > div > p > .task-menu-btn { opacity: 1; }
+.task-menu-btn:hover { background: var(--bg-hover); color: var(--text); }
+@media (hover: none) { .task-menu-btn { opacity: 0.6; } }
+
+.gunita-editor li.task-moved > div > p,
+.gunita-editor li.task-dropped > div > p {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-faint);
+}
+.gunita-editor li.task-moved > label,
+.gunita-editor li.task-dropped > label {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.gunita-editor li.task-snoozed > div > p { color: var(--text-faint); }
+.todo-day { scroll-margin-top: 56px; }

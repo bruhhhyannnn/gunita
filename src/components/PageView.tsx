@@ -37,14 +37,18 @@ import { TodoToolbar } from './todo/TodoToolbar'
 import { MeetingPanel } from './meeting/MeetingPanel'
 import { SharePopover } from './SharePopover'
 import { aiExtensions } from '#/ai/extensions'
+import { TodoDecorations } from '#/todo/plugin'
 
 export function PageView({ pageId }: { pageId: string }) {
   const page = usePage(pageId)
   const scroller = useRef<HTMLDivElement>(null)
   const [editor, setEditor] = useState<Editor | null>(null)
   const kind = page?.kind
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const extra = useMemo(() => (page ? aiExtensions(page) : []), [pageId, kind])
+  const extra = useMemo(
+    () => (page ? [...(page.kind === 'todo' ? [TodoDecorations.configure({ pageId: page.id })] : []), ...aiExtensions(page)] : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pageId, kind],
+  )
 
   useEffect(() => {
     try {
