@@ -37,6 +37,8 @@ function AppLayout() {
       const me = await fetchMe()
       if (me.status === 'ok') {
         setConfig(me.config)
+        // Let the AI refresh the brain once a day, after things settle.
+        setTimeout(() => void import('#/ai/reflect').then((m) => m.maybeReflectDaily()), 20_000)
         if (me.user.id !== user.id) {
           setLocalUser(me.user)
           location.reload()

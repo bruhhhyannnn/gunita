@@ -24,6 +24,7 @@ import { Route as ApiAiCompleteRouteImport } from './routes/api/ai/complete'
 import { Route as ApiAiExtractRouteImport } from './routes/api/ai/extract'
 import { Route as ApiAiMeetingRouteImport } from './routes/api/ai/meeting'
 import { Route as ApiAiPlanRouteImport } from './routes/api/ai/plan'
+import { Route as ApiAiReflectRouteImport } from './routes/api/ai/reflect'
 import { Route as ApiAiReportRouteImport } from './routes/api/ai/report'
 import { Route as ApiAuthDevRouteImport } from './routes/api/auth/dev'
 import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
@@ -106,6 +107,11 @@ const ApiAiPlanRoute = ApiAiPlanRouteImport.update({
   path: '/api/ai/plan',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiReflectRoute = ApiAiReflectRouteImport.update({
+  id: '/api/ai/reflect',
+  path: '/api/ai/reflect',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAiReportRoute = ApiAiReportRouteImport.update({
   id: '/api/ai/report',
   path: '/api/ai/report',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/api/ai/extract': typeof ApiAiExtractRoute
   '/api/ai/meeting': typeof ApiAiMeetingRoute
   '/api/ai/plan': typeof ApiAiPlanRoute
+  '/api/ai/reflect': typeof ApiAiReflectRoute
   '/api/ai/report': typeof ApiAiReportRoute
   '/api/auth/dev': typeof ApiAuthDevRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/api/ai/extract': typeof ApiAiExtractRoute
   '/api/ai/meeting': typeof ApiAiMeetingRoute
   '/api/ai/plan': typeof ApiAiPlanRoute
+  '/api/ai/reflect': typeof ApiAiReflectRoute
   '/api/ai/report': typeof ApiAiReportRoute
   '/api/auth/dev': typeof ApiAuthDevRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/api/ai/extract': typeof ApiAiExtractRoute
   '/api/ai/meeting': typeof ApiAiMeetingRoute
   '/api/ai/plan': typeof ApiAiPlanRoute
+  '/api/ai/reflect': typeof ApiAiReflectRoute
   '/api/ai/report': typeof ApiAiReportRoute
   '/api/auth/dev': typeof ApiAuthDevRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/api/ai/extract'
     | '/api/ai/meeting'
     | '/api/ai/plan'
+    | '/api/ai/reflect'
     | '/api/ai/report'
     | '/api/auth/dev'
     | '/api/auth/google'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/api/ai/extract'
     | '/api/ai/meeting'
     | '/api/ai/plan'
+    | '/api/ai/reflect'
     | '/api/ai/report'
     | '/api/auth/dev'
     | '/api/auth/google'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/api/ai/extract'
     | '/api/ai/meeting'
     | '/api/ai/plan'
+    | '/api/ai/reflect'
     | '/api/ai/report'
     | '/api/auth/dev'
     | '/api/auth/google'
@@ -298,6 +310,7 @@ export interface RootRouteChildren {
   ApiAiExtractRoute: typeof ApiAiExtractRoute
   ApiAiMeetingRoute: typeof ApiAiMeetingRoute
   ApiAiPlanRoute: typeof ApiAiPlanRoute
+  ApiAiReflectRoute: typeof ApiAiReflectRoute
   ApiAiReportRoute: typeof ApiAiReportRoute
   ApiAuthDevRoute: typeof ApiAuthDevRoute
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRoute
@@ -414,6 +427,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiPlanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai/reflect': {
+      id: '/api/ai/reflect'
+      path: '/api/ai/reflect'
+      fullPath: '/api/ai/reflect'
+      preLoaderRoute: typeof ApiAiReflectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/ai/report': {
       id: '/api/ai/report'
       path: '/api/ai/report'
@@ -494,6 +514,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiExtractRoute: ApiAiExtractRoute,
   ApiAiMeetingRoute: ApiAiMeetingRoute,
   ApiAiPlanRoute: ApiAiPlanRoute,
+  ApiAiReflectRoute: ApiAiReflectRoute,
   ApiAiReportRoute: ApiAiReportRoute,
   ApiAuthDevRoute: ApiAuthDevRoute,
   ApiAuthGoogleRoute: ApiAuthGoogleRoute,
