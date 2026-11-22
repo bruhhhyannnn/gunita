@@ -12,7 +12,10 @@
     "deploy": "pnpm run build && wrangler deploy",
     "typecheck": "tsc --noEmit",
     "db:migrate:local": "wrangler d1 migrations apply gunita --local",
-    "db:migrate:remote": "wrangler d1 migrations apply gunita --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply gunita --remote",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build"
   },
   "dependencies": {
     "3d-force-graph": "^1.80.2",
@@ -68,6 +71,7 @@
     "@cloudflare/vite-plugin": "^1.26.0",
     "@cloudflare/workers-types": "^5.20261121.1",
     "@tailwindcss/vite": "^4.3.5",
+    "@tauri-apps/cli": "^2.12.6",
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

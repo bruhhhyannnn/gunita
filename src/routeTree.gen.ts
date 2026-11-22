@@ -28,6 +28,7 @@ import { Route as ApiAiMeetingRouteImport } from './routes/api/ai/meeting'
 import { Route as ApiAiPlanRouteImport } from './routes/api/ai/plan'
 import { Route as ApiAiReflectRouteImport } from './routes/api/ai/reflect'
 import { Route as ApiAiReportRouteImport } from './routes/api/ai/report'
+import { Route as ApiAuthDesktopRouteImport } from './routes/api/auth/desktop'
 import { Route as ApiAuthDevRouteImport } from './routes/api/auth/dev'
 import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
 import { Route as ApiAuthGoogleCallbackRouteImport } from './routes/api/auth/google-callback'
@@ -129,6 +130,11 @@ const ApiAiReportRoute = ApiAiReportRouteImport.update({
   path: '/api/ai/report',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthDesktopRoute = ApiAuthDesktopRouteImport.update({
+  id: '/api/auth/desktop',
+  path: '/api/auth/desktop',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthDevRoute = ApiAuthDevRouteImport.update({
   id: '/api/auth/dev',
   path: '/api/auth/dev',
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/api/ai/plan': typeof ApiAiPlanRoute
   '/api/ai/reflect': typeof ApiAiReflectRoute
   '/api/ai/report': typeof ApiAiReportRoute
+  '/api/auth/desktop': typeof ApiAuthDesktopRoute
   '/api/auth/dev': typeof ApiAuthDevRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/api/auth/google-callback': typeof ApiAuthGoogleCallbackRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/api/ai/plan': typeof ApiAiPlanRoute
   '/api/ai/reflect': typeof ApiAiReflectRoute
   '/api/ai/report': typeof ApiAiReportRoute
+  '/api/auth/desktop': typeof ApiAuthDesktopRoute
   '/api/auth/dev': typeof ApiAuthDevRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/api/auth/google-callback': typeof ApiAuthGoogleCallbackRoute
@@ -233,6 +241,7 @@ export interface FileRoutesById {
   '/api/ai/plan': typeof ApiAiPlanRoute
   '/api/ai/reflect': typeof ApiAiReflectRoute
   '/api/ai/report': typeof ApiAiReportRoute
+  '/api/auth/desktop': typeof ApiAuthDesktopRoute
   '/api/auth/dev': typeof ApiAuthDevRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/api/auth/google-callback': typeof ApiAuthGoogleCallbackRoute
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | '/api/ai/plan'
     | '/api/ai/reflect'
     | '/api/ai/report'
+    | '/api/auth/desktop'
     | '/api/auth/dev'
     | '/api/auth/google'
     | '/api/auth/google-callback'
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/api/ai/plan'
     | '/api/ai/reflect'
     | '/api/ai/report'
+    | '/api/auth/desktop'
     | '/api/auth/dev'
     | '/api/auth/google'
     | '/api/auth/google-callback'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/api/ai/plan'
     | '/api/ai/reflect'
     | '/api/ai/report'
+    | '/api/auth/desktop'
     | '/api/auth/dev'
     | '/api/auth/google'
     | '/api/auth/google-callback'
@@ -338,6 +350,7 @@ export interface RootRouteChildren {
   ApiAiPlanRoute: typeof ApiAiPlanRoute
   ApiAiReflectRoute: typeof ApiAiReflectRoute
   ApiAiReportRoute: typeof ApiAiReportRoute
+  ApiAuthDesktopRoute: typeof ApiAuthDesktopRoute
   ApiAuthDevRoute: typeof ApiAuthDevRoute
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRoute
   ApiAuthGoogleCallbackRoute: typeof ApiAuthGoogleCallbackRoute
@@ -481,6 +494,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/desktop': {
+      id: '/api/auth/desktop'
+      path: '/api/auth/desktop'
+      fullPath: '/api/auth/desktop'
+      preLoaderRoute: typeof ApiAuthDesktopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/dev': {
       id: '/api/auth/dev'
       path: '/api/auth/dev'
@@ -558,6 +578,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiPlanRoute: ApiAiPlanRoute,
   ApiAiReflectRoute: ApiAiReflectRoute,
   ApiAiReportRoute: ApiAiReportRoute,
+  ApiAuthDesktopRoute: ApiAuthDesktopRoute,
   ApiAuthDevRoute: ApiAuthDevRoute,
   ApiAuthGoogleRoute: ApiAuthGoogleRoute,
   ApiAuthGoogleCallbackRoute: ApiAuthGoogleCallbackRoute,

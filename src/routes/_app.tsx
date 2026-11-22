@@ -86,11 +86,18 @@ function Shell() {
       }
     }
     const onOpen = (e: Event) => void navigate({ to: '/p/$pageId', params: { pageId: (e as CustomEvent<string>).detail } })
+    // Sent by the desktop app's global hotkey and tray menu (see src/lib/desktop.ts).
+    const onCapture = () => setUi({ captureOpen: true })
+    const onNavigate = (e: Event) => void navigate({ href: String((e as CustomEvent<string>).detail || '/') })
     window.addEventListener('keydown', onKey)
     window.addEventListener('gunita:open-page', onOpen)
+    window.addEventListener('gunita:capture', onCapture)
+    window.addEventListener('gunita:navigate', onNavigate)
     return () => {
       window.removeEventListener('keydown', onKey)
       window.removeEventListener('gunita:open-page', onOpen)
+      window.removeEventListener('gunita:capture', onCapture)
+      window.removeEventListener('gunita:navigate', onNavigate)
     }
   }, [navigate])
 

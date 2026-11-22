@@ -6,6 +6,7 @@ import { exportAll } from '#/lib/markdown'
 import { setLocalUser } from '#/lib/session'
 import type { Settings } from '#/lib/types'
 import { cn } from '#/components/ui/cn'
+import { DESKTOP_HOTKEY, isDesktop } from '#/lib/desktop'
 
 export const Route = createFileRoute('/_app/settings')({ component: SettingsPage })
 
@@ -112,6 +113,18 @@ function SettingsPage() {
             </a>
           )}
         </Row>
+
+        {isDesktop() && (
+          <>
+            <h2 className="mt-10 text-sm font-semibold text-muted">Desktop app</h2>
+            <Row title="Quick capture" desc="Works from any app, even when Gunita is in the tray.">
+              <kbd className="rounded border border-line px-2 py-1 text-xs">{DESKTOP_HOTKEY}</kbd>
+            </Row>
+            <Row title="Start with Windows and tray" desc="Right-click the Gunita icon in the system tray to change these. Closing the window keeps Gunita in the tray.">
+              <span />
+            </Row>
+          </>
+        )}
 
         <h2 className="mt-10 text-sm font-semibold text-muted">Your data</h2>
         <Row title="Export everything" desc="All pages as Markdown, databases as CSV, in a zip file.">

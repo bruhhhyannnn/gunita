@@ -9,6 +9,10 @@ export const Route = createFileRoute('/api/auth/google')({
         if (!googleConfigured()) return error(500, 'Google sign-in is not configured (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).')
         const url = new URL(request.url)
         const mode = url.searchParams.get('mode') === 'calendar' ? 'calendar' : 'login'
+        // The desktop app signs in through the system browser and passes a PKCE-style challenge.
+        const desktop = url.searchParams.get('client') === 'desktop'
+        const challenge = url.searchParams.get('challenge') ?? ''
+        if (desktop && !/^[A-Za-z0-9_-]{43}$/.test(challenge)) return error(400, 'Bad desktop sign-in request')
         const state = generateState()
         const verifier = generateCodeVerifier()
         const scopes = ['openid', 'profile', 'email']
@@ -26,6 +30,8 @@ export const Route = createFileRoute('/api/auth/google')({
         headers.append('Set-Cookie', cookie('g_state', state, { maxAge: 600, secure }))
         headers.append('Set-Cookie', cookie('g_verifier', verifier, { maxAge: 600, secure }))
         headers.append('Set-Cookie', cookie('g_mode', mode, { maxAge: 600, secure }))
+        headers.append('Set-Cookie', cookie('g_client', desktop ? 'desktop' : 'web', { maxAge: 600, secure }))
+        if (desktop) headers.append('Set-Cookie', cookie('g_challenge', challenge, { maxAge: 600, secure }))
         return new Response(null, { status: 302, headers })
       },
     },

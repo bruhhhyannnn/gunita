@@ -74,6 +74,8 @@ You need a Cloudflare account. The free plan is enough to start.
    pnpm db:migrate:remote
    ```
 
+   Run this again whenever a new file appears in `migrations/`, before you deploy.
+
 3. **Google sign-in.**
    1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create an OAuth client of type *Web application*.
    2. Add these authorized redirect URIs:
@@ -113,6 +115,28 @@ You need a Cloudflare account. The free plan is enough to start.
 - Images and files go to R2, up to 20 MB each. Uploads need a connection.
 - The Worker bundle is about 2 MB gzipped. Cloudflare's free plan allows 3 MB.
 - The live transcript uses the browser's speech recognition. It works best in Chrome, and your browser vendor may process the audio. Always ask attendees first.
+
+## Desktop app (Windows)
+
+`src-tauri/` holds a small [Tauri](https://tauri.app) app. It opens the live site in its own window, so it updates whenever you deploy, works offline, and doesn't count toward your browser's tab limit. On top of the website it adds:
+
+- a tray icon (Open, Quick capture, Start today, Start with Windows, Quit)
+- **Ctrl+Shift+Space** for Quick capture from any app
+- close-to-tray, so the hotkey keeps working
+- remembered window size and position
+- links to other sites opening in your normal browser
+
+**Google sign-in.** Google blocks sign-in inside apps, so the app opens your browser instead. When you're signed in there, the browser asks to open Gunita, and you're signed in. A one-time code plus a secret that only the app holds (`/api/auth/desktop`) keeps that handoff safe.
+
+**Get the installer.** On GitHub, go to **Actions → Desktop app (Windows) → Run workflow**, or push a tag like `desktop-v0.1.0`. After about 10–15 minutes, the installer appears under **Releases**.
+
+**Build it yourself on Windows.** Install Rust from rustup.rs, then:
+
+```bash
+pnpm desktop:build
+```
+
+To point the app at another deployment, set `GUNITA_URL` when building.
 
 ## How it works
 

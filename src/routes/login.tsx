@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { fetchMe, setLocalUser, type ServerConfig } from '#/lib/session'
+import { isDesktop } from '#/lib/desktop'
 
 export const Route = createFileRoute('/login')({ component: Login })
 
@@ -8,6 +9,8 @@ function Login() {
   const navigate = useNavigate()
   const [config, setConfig] = useState<ServerConfig | null>(null)
   const [offline, setOffline] = useState(false)
+  const [waiting, setWaiting] = useState(false)
+  const desktopError = typeof location !== 'undefined' && new URLSearchParams(location.search).get('error') === 'desktop'
 
   useEffect(() => {
     void fetchMe().then((r) => {
@@ -31,11 +34,19 @@ function Login() {
             <>
               <a
                 href="/api/auth/google"
+                // In the desktop app this link opens your normal browser (Google blocks sign-in inside apps).
+                onClick={() => isDesktop() && setWaiting(true)}
                 className="flex h-11 w-full items-center justify-center gap-3 rounded-md border border-line bg-popover font-medium hover:bg-hover"
               >
                 <GoogleLogo />
                 Continue with Google
               </a>
+              {waiting && (
+                <p className="text-sm text-muted">
+                  Finish signing in in your browser. When it asks to open Gunita, allow it, and you'll be brought back here.
+                </p>
+              )}
+              {desktopError && !waiting && <p className="text-sm text-danger">That sign-in link expired. Please try again.</p>}
               {!config.googleConfigured && (
                 <p className="text-xs text-muted">
                   Google sign-in needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET. See the README.

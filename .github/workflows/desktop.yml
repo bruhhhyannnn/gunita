@@ -1,0 +1,45 @@
+name: Desktop app (Windows)
+
+# Builds the Windows installer and attaches it to a GitHub Release.
+# Run it from the Actions tab ("Run workflow"), or push a tag like desktop-v0.1.0.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['desktop-v*']
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: desktop-v__VERSION__
+          releaseName: Gunita for Windows v__VERSION__
+          releaseBody: |
+            Download **Gunita_*_x64-setup.exe** below and run it. It installs just for you (no admin needed).
+            Windows may warn that the app is unrecognized because it isn't code-signed: click **More info → Run anyway**.
+          releaseDraft: false
+          prerelease: false
