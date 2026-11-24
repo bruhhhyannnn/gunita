@@ -17,6 +17,7 @@ import { GunitaTaskItem } from './taskItem'
 import { Mentions, SlashCommands, type EditorContext } from './commands'
 import { ImageUploads } from './uploads'
 import { TodoDay } from '#/todo/todoDay'
+import { MoveBlock } from './moveBlock'
 
 const lowlight = createLowlight(common)
 
@@ -58,6 +59,7 @@ export function buildExtensions(opts: { doc: Y.Doc; ctx: EditorContext; extra?: 
     SlashCommands.configure({ ctx: opts.ctx }),
     Mentions.configure({ ctx: opts.ctx }),
     ImageUploads,
+    MoveBlock,
     ...(opts.extra ?? []),
   ]
 }

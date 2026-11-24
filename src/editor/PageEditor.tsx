@@ -80,7 +80,7 @@ function EditorInner({
   return (
     <div className="relative">
       <EditorContent editor={editor} />
-      <DragHandle editor={editor}>
+      <DragHandle editor={editor} nested>
         <div className="drag-handle mr-1" title="Drag to move">
           <GripVertical className="h-4 w-4" />
         </div>
