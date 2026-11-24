@@ -20,6 +20,7 @@ import { TodoDay } from '#/todo/todoDay'
 import { TodoSection } from '#/todo/todoSection'
 import { MoveBlock } from './moveBlock'
 import { WordNav } from './wordNav'
+import { AppUndo } from './appUndo'
 
 const lowlight = createLowlight(common)
 
@@ -64,6 +65,7 @@ export function buildExtensions(opts: { doc: Y.Doc; ctx: EditorContext; extra?: 
     ImageUploads,
     MoveBlock,
     WordNav,
+    AppUndo,
     ...(opts.extra ?? []),
   ]
 }

@@ -1,5 +1,5 @@
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { Brain, Home, Menu as MenuIcon, Plus, Settings, X } from 'lucide-react'
+import { Brain, Home, Menu as MenuIcon, Plus, Settings, Timer, X } from 'lucide-react'
 import { useEffect } from 'react'
 import { useWs } from '#/lib/app'
 import { activateTab, closeTab, openTab, syncActiveTab, useTabs, type Tab } from '#/lib/tabs'
@@ -77,6 +77,9 @@ function TabButton({ tab, active, onClick, onClose }: { tab: Tab; active: boolea
   } else if (tab.path.startsWith('/brain')) {
     icon = <Brain className="h-3.5 w-3.5 text-muted" />
     title = 'Brain'
+  } else if (tab.path.startsWith('/focus')) {
+    icon = <Timer className="h-3.5 w-3.5 text-muted" />
+    title = 'Focus'
   } else if (tab.path.startsWith('/settings')) {
     icon = <Settings className="h-3.5 w-3.5 text-muted" />
     title = 'Settings'

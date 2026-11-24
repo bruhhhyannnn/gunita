@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppBrainRouteImport } from './routes/_app/brain'
+import { Route as AppFocusRouteImport } from './routes/_app/focus'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as ApiMeRouteImport } from './routes/api/me'
@@ -52,6 +53,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppBrainRoute = AppBrainRouteImport.update({
   id: '/brain',
   path: '/brain',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFocusRoute = AppFocusRouteImport.update({
+  id: '/focus',
+  path: '/focus',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/brain': typeof AppBrainRoute
+  '/focus': typeof AppFocusRoute
   '/settings': typeof AppSettingsRoute
   '/api/files': typeof ApiFilesRoute
   '/api/me': typeof ApiMeRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/brain': typeof AppBrainRoute
+  '/focus': typeof AppFocusRoute
   '/settings': typeof AppSettingsRoute
   '/api/files': typeof ApiFilesRoute
   '/api/me': typeof ApiMeRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/brain': typeof AppBrainRoute
+  '/_app/focus': typeof AppFocusRoute
   '/_app/settings': typeof AppSettingsRoute
   '/api/files': typeof ApiFilesRoute
   '/api/me': typeof ApiMeRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/brain'
+    | '/focus'
     | '/settings'
     | '/api/files'
     | '/api/me'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/brain'
+    | '/focus'
     | '/settings'
     | '/api/files'
     | '/api/me'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/brain'
+    | '/_app/focus'
     | '/_app/settings'
     | '/api/files'
     | '/api/me'
@@ -374,6 +386,13 @@ declare module '@tanstack/react-router' {
       path: '/brain'
       fullPath: '/brain'
       preLoaderRoute: typeof AppBrainRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/focus': {
+      id: '/_app/focus'
+      path: '/focus'
+      fullPath: '/focus'
+      preLoaderRoute: typeof AppFocusRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings': {
@@ -528,6 +547,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppBrainRoute: typeof AppBrainRoute
+  AppFocusRoute: typeof AppFocusRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppPPageIdRoute: typeof AppPPageIdRoute
@@ -535,6 +555,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppBrainRoute: AppBrainRoute,
+  AppFocusRoute: AppFocusRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
   AppPPageIdRoute: AppPPageIdRoute,

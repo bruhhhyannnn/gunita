@@ -429,5 +429,8 @@ export async function runImport(plan: ImportPlan, opts: ImportOptions, onProgres
   }
   await create(null, rootId)
   onProgress({ step: 'Done', done: total, total })
+  // Hundreds of pages were made one by one; Ctrl+Z shouldn't unpick them. (Delete
+  // the "Imported from Notion" page to remove the import.)
+  getApp().wsUndo.clear()
   return { created, warnings, rootId, todoIds }
 }

@@ -1,9 +1,12 @@
 import { useCallback, useRef, useSyncExternalStore } from 'react'
+import * as Y from 'yjs'
 import { DocManager } from './docs'
 import { SyncEngine } from './sync'
 import { PageIndex } from './pageIndex'
 import { Workspace, WORKSPACE_DOC, type Snapshot } from './workspace'
 import type { LocalUser, ServerConfig } from './session'
+import type { PageMeta } from './types'
+import { trackUndo } from './undo'
 
 export interface App {
   user: LocalUser
@@ -12,6 +15,34 @@ export interface App {
   sync: SyncEngine
   index: PageIndex
   config: ServerConfig | null
+  /** Undo history of the workspace (page tree, titles, properties, …). */
+  wsUndo: Y.UndoManager
+}
+
+function quote(p: PageMeta | undefined) {
+  return `“${p?.title || 'Untitled'}”`
+}
+
+/** A short description of what an undo/redo changed in the page tree. */
+function describeChange(before: Record<string, PageMeta>, after: Record<string, PageMeta>): string | null {
+  const ids = new Set([...Object.keys(before), ...Object.keys(after)])
+  const changed = [...ids].filter((id) => before[id] !== after[id])
+  if (!changed.length) return null
+  if (changed.length > 1) {
+    const back = changed.filter((id) => (!before[id] || before[id].trashedAt) && after[id] && !after[id].trashedAt)
+    if (back.length === 1) return `Brought back ${quote(after[back[0]])}`
+    return `Changed ${changed.length} pages`
+  }
+  const id = changed[0]
+  const a = before[id]
+  const b = after[id]
+  if (!b) return `Removed ${quote(a)}`
+  if (!a) return `Brought back ${quote(b)}`
+  if (a.trashedAt && !b.trashedAt) return `Restored ${quote(b)} from the trash`
+  if (!a.trashedAt && b.trashedAt) return `Moved ${quote(b)} to the trash`
+  if (a.title !== b.title) return `Renamed to ${quote(b)}`
+  if (a.parentId !== b.parentId || a.order !== b.order) return `Moved ${quote(b)}`
+  return `Changed ${quote(b)}`
 }
 
 let current: App | null = null
@@ -30,7 +61,16 @@ export async function startApp(user: LocalUser): Promise<App> {
   sync.onRemoteChange = (ids) => {
     for (const id of ids) if (id !== WORKSPACE_DOC) index.schedule(id, 200)
   }
-  current = { user, docs, ws, sync, index, config: null }
+  // Only your own changes are undone, never ones synced from another device.
+  const wsUndo = new Y.UndoManager(ws.pages, { captureTimeout: 800 })
+  let last: string | null = null
+  const step = (dir: 'undo' | 'redo') => {
+    const before = ws.getSnapshot().pages
+    wsUndo[dir]()
+    last = describeChange(before, ws.getSnapshot().pages)
+  }
+  trackUndo({ um: wsUndo, undo: () => step('undo'), redo: () => step('redo'), describe: () => last })
+  current = { user, docs, ws, sync, index, config: null, wsUndo }
   sync.start()
   void index.ready.then(() => setTimeout(() => void index.fillMissing(), 3000))
   listeners.forEach((l) => l())

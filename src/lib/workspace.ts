@@ -4,6 +4,7 @@ import { newId } from './ids'
 import type {
   DatabaseSchema,
   Entity,
+  FocusEntry,
   GraphLink,
   InboxItem,
   MemoryFact,
@@ -14,6 +15,9 @@ import type {
 } from './types'
 
 export const WORKSPACE_DOC = 'workspace'
+
+/** Origin for automatic changes (timestamps, auto-drafted reports) that undo should skip. */
+export const UNTRACKED = 'gunita:untracked'
 
 const PROP_PREFIX = 'p:'
 
@@ -27,6 +31,7 @@ export interface Snapshot {
   links: Record<string, GraphLink>
   inbox: InboxItem[]
   settings: Settings
+  focus: FocusEntry[]
 }
 
 function readPage(id: string, m: PageMap): PageMeta {
@@ -80,6 +85,8 @@ export class Workspace {
   readonly links: Y.Map<GraphLink>
   readonly inbox: Y.Array<InboxItem>
   readonly settings: Y.Map<unknown>
+  /** Finished focus periods (Pomodoro), synced so every device shows the same streak. */
+  readonly focusLog: Y.Array<FocusEntry>
   private snap: Snapshot
   private listeners = new Set<() => void>()
 
@@ -90,6 +97,7 @@ export class Workspace {
     this.links = doc.getMap('links')
     this.inbox = doc.getArray('inbox')
     this.settings = doc.getMap('settings')
+    this.focusLog = doc.getArray('focus')
     this.snap = this.fullSnapshot(0)
 
     this.pages.observeDeep((events) => {
@@ -111,6 +119,7 @@ export class Workspace {
     this.links.observe(() => this.emit({ links: mapToRecord(this.links) }))
     this.inbox.observe(() => this.emit({ inbox: this.inbox.toArray() }))
     this.settings.observe(() => this.emit({ settings: this.settings.toJSON() as Settings }))
+    this.focusLog.observe(() => this.emit({ focus: this.focusLog.toArray() }))
   }
 
   private fullSnapshot(version: number): Snapshot {
@@ -124,6 +133,7 @@ export class Workspace {
       links: mapToRecord(this.links),
       inbox: this.inbox.toArray(),
       settings: this.settings.toJSON() as Settings,
+      focus: this.focusLog.toArray(),
     }
   }
 
@@ -265,7 +275,16 @@ export class Workspace {
 
   touch(id: string) {
     const m = this.pages.get(id)
-    if (m) m.set('updatedAt', Date.now())
+    if (m) this.doc.transact(() => m.set('updatedAt', Date.now()), UNTRACKED)
+  }
+
+  /** Runs changes that undo should skip (they're automatic, not something you did). */
+  untracked<T>(fn: () => T): T {
+    let out!: T
+    this.doc.transact(() => {
+      out = fn()
+    }, UNTRACKED)
+    return out
   }
 
   setProp(pageId: string, propId: string, value: unknown) {
@@ -321,6 +340,12 @@ export class Workspace {
         else this.settings.set(k, v)
       }
     })
+  }
+
+  // ---------- Focus timer ----------
+
+  logFocus(entry: Omit<FocusEntry, 'id'>) {
+    this.focusLog.push([{ ...entry, id: newId() }])
   }
 
   // ---------- Inbox (tasks waiting for the next Start Today) ----------

@@ -1,5 +1,8 @@
 import { DropdownMenu } from 'radix-ui'
-import { CalendarClock, CornerDownRight, Moon, RotateCcw, Sun, XCircle } from 'lucide-react'
+import { CalendarClock, CornerDownRight, Moon, RotateCcw, Sun, Timer, XCircle } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { focusSettings, getRun, startFocus } from '#/lib/focus'
+import { toast } from '../ui/toast'
 import { useEffect, useState } from 'react'
 import { editors } from '#/editor/PageEditor'
 import { addDays, isoDate } from '#/lib/dates'
@@ -20,6 +23,7 @@ export function TaskMenu({ pageId }: { pageId: string }) {
   const [ev, setEv] = useState<TaskMenuEvent | null>(null)
   const [pick, setPick] = useState(false)
   const page = useWs((s) => s.pages[pageId])
+  const navigate = useNavigate()
   useEffect(() => {
     const on = (e: Event) => {
       const d = (e as CustomEvent<TaskMenuEvent>).detail
@@ -62,6 +66,30 @@ export function TaskMenu({ pageId }: { pageId: string }) {
                 <MenuItem icon={<Sun />} onSelect={() => run(() => moveTaskToDay(editor!, ev.pos, today))}>
                   Move to today
                 </MenuItem>
+              )}
+              {!ev.attrs.checked && !status && ev.day === today && (
+                <>
+                  <MenuItem
+                    icon={<Timer />}
+                    onSelect={() =>
+                      run(() => {
+                        const busy = getRun()
+                        if (busy && busy.status !== 'done') {
+                          toast('A focus session is already running.', { label: 'Open', run: () => void navigate({ to: '/focus' }) })
+                          return
+                        }
+                        const node = editor!.state.doc.nodeAt(ev.pos)
+                        const text = node?.firstChild?.textContent.trim() ?? ''
+                        const cfg = focusSettings()
+                        startFocus(cfg, { text, taskId: (ev.attrs.taskId as string) || undefined, listId: pageId })
+                        toast(`Focusing on “${text}” for ${cfg.focus} min.`, { label: 'Open timer', run: () => void navigate({ to: '/focus' }) })
+                      })
+                    }
+                  >
+                    Focus on this
+                  </MenuItem>
+                  <MenuSeparator />
+                </>
               )}
               {topLevel && status !== 'moved' && (sections.length > 0 || current) && (
                 <>

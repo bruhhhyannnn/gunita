@@ -187,6 +187,42 @@ export interface GraphLink {
   createdAt: number
 }
 
+// ---------- Focus timer (Pomodoro) ----------
+
+export type FocusSound = 'chime' | 'bell' | 'digital' | 'none'
+
+export interface FocusConfig {
+  /** Minutes of focus per set. */
+  focus: number
+  /** Minutes of break between sets (0: no breaks). */
+  short: number
+  sets: number
+  longOn: boolean
+  /** A long break after every N sets. */
+  longEvery: number
+  long: number
+  /** Start breaks and the next set without waiting for a click. */
+  auto: boolean
+  sound: FocusSound
+}
+
+export interface FocusSettings extends FocusConfig {
+  /** Daily goal, in minutes of focus. */
+  goal: number
+}
+
+/** One finished (or stopped) focus period. */
+export interface FocusEntry {
+  id: string
+  /** When it started (ms). */
+  start: number
+  day: string
+  minutes: number
+  task?: string
+  taskId?: string
+  listId?: string
+}
+
 export interface Settings {
   theme?: 'system' | 'light' | 'dark'
   ghostText?: boolean
@@ -194,4 +230,5 @@ export interface Settings {
   completionModel?: 'claude-opus-5-5' | 'claude-haiku-5-5' | 'workers-ai'
   workersAiModel?: string
   lastReflectAt?: number
+  focus?: FocusSettings
 }

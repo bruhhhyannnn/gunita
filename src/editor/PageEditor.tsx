@@ -8,6 +8,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useApp } from '#/lib/app'
 import { cn } from '#/components/ui/cn'
 import { buildExtensions } from './extensions'
+import { yUndoPluginKey } from '@tiptap/y-tiptap'
+import { trackUndo } from '#/lib/undo'
 
 /** Live editors by page id, so page-level actions (Start Today, AI) can edit the open document. */
 export const editors = new Map<string, Editor>()
@@ -70,7 +72,11 @@ function EditorInner({
     if (!editor) return
     editors.set(pageId, editor)
     onReady?.(editor)
+    // This page's edits join the app-wide undo history while it's open.
+    const um = yUndoPluginKey.getState(editor.state)?.undoManager
+    const untrack = um ? trackUndo({ um, undo: () => editor.commands.undo(), redo: () => editor.commands.redo() }) : undefined
     return () => {
+      untrack?.()
       if (editors.get(pageId) === editor) editors.delete(pageId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

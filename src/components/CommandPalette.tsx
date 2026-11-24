@@ -1,7 +1,8 @@
 import { Command } from 'cmdk'
 import { Dialog as D } from 'radix-ui'
 import { useNavigate } from '@tanstack/react-router'
-import { Brain, CalendarClock, CheckSquare, FileText, Moon, Settings, Sparkles, Sun, Table2 } from 'lucide-react'
+import { Brain, CalendarClock, CheckSquare, FileText, Moon, Settings, Sparkles, Sun, Table2, Timer } from 'lucide-react'
+import { focusSettings, getRun, startFocus } from '#/lib/focus'
 import { useMemo, useState, type ReactNode } from 'react'
 import { getApp, useApp, useIndexVersion, useWs } from '#/lib/app'
 import { createPageOfKind } from '#/lib/actions'
@@ -71,6 +72,17 @@ export function CommandPalette() {
       run: () => {
         close()
         void navigate({ to: '/brain' })
+      },
+    },
+    {
+      id: 'focus',
+      label: getRun() && getRun()!.status !== 'done' ? 'Open the focus timer' : `Start focusing (${focusSettings().focus} min)`,
+      icon: <Timer />,
+      run: () => {
+        close()
+        const r = getRun()
+        if (!r || r.status === 'done') startFocus(focusSettings())
+        void navigate({ to: '/focus' })
       },
     },
     {

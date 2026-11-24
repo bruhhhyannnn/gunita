@@ -8,6 +8,9 @@ import { Sidebar } from '#/components/Sidebar'
 import { TabBar } from '#/components/TabBar'
 import { CommandPalette } from '#/components/CommandPalette'
 import { Toaster, toast } from '#/components/ui/toast'
+import { runUndo } from '#/lib/undo'
+import { startFocusEngine } from '#/lib/focus'
+import { FocusPill } from '#/components/focus/FocusMini'
 import { config } from '#/config'
 import { isoDate } from '#/lib/dates'
 import { useTheme } from '#/lib/theme'
@@ -70,6 +73,7 @@ function Shell() {
   useTheme()
   const navigate = useNavigate()
   useAutoReports()
+  useFocusEngine()
   const askOpen = useUi((s) => s.askOpen)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -86,6 +90,15 @@ function Shell() {
       } else if (mod && e.key.toLowerCase() === 'j') {
         e.preventDefault()
         setUi((s) => ({ askOpen: !s.askOpen }))
+      } else if (mod && !e.altKey && (e.key.toLowerCase() === 'z' || (e.key.toLowerCase() === 'y' && !e.shiftKey))) {
+        // Undo/redo outside the editor (the editor handles its own keys).
+        const t = e.target as HTMLElement | null
+        if (e.defaultPrevented || t?.closest('.ProseMirror, [role=dialog]')) return
+        const typing = t && (t.matches('input, textarea, select') || t.isContentEditable)
+        if (typing && !t.closest('[data-app-undo]')) return
+        e.preventDefault()
+        // No message while typing in a title: you can see it change.
+        runUndo(e.key.toLowerCase() === 'y' || e.shiftKey ? 'redo' : 'undo', { quiet: !!typing })
       }
     }
     const onOpen = (e: Event) => void navigate({ to: '/p/$pageId', params: { pageId: (e as CustomEvent<string>).detail } })
@@ -126,12 +139,28 @@ function Shell() {
       {askOpen && <AskPanel />}
       <CommandPalette />
       <QuickCapture />
+      <FocusPill />
       <Toaster />
     </div>
   )
 }
 
 /** On the 15th and month end, draft accomplishment reports and say so. */
+/** Runs the focus timer, and shows its alerts in the app while it's in front. */
+function useFocusEngine() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    startFocusEngine()
+    const onCue = (e: Event) => {
+      if (document.visibilityState !== 'visible') return
+      const { text } = (e as CustomEvent<{ text: string }>).detail
+      toast(text, { label: 'Open', run: () => void navigate({ to: '/focus' }) }, 8000)
+    }
+    window.addEventListener('gunita:focus-cue', onCue)
+    return () => window.removeEventListener('gunita:focus-cue', onCue)
+  }, [navigate])
+}
+
 function useAutoReports() {
   const navigate = useNavigate()
   useEffect(() => {

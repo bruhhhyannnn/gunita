@@ -18,7 +18,8 @@ The full product spec and milestones are in [docs/PLAN.md](docs/PLAN.md).
 | Editor | Pages and sub-pages, slash commands (`/`), `[[` page links, `@` dates, nested to-dos, toggles, callouts, code, tables, images, drag handle, Markdown shortcuts |
 | Workspace | Sidebar tree with drag and drop, favorites, trash, tabs, Ctrl+K search, covers from a public-domain art gallery, emoji icons, contents rail, dark mode |
 | Databases | Table, board, calendar and list views. Properties, filters, sorts, inline databases, rows open as pages |
-| TODO lists | Days stacked on one page. **Start Today** adds your template and carries over everything unfinished. Old copies show "→ moved to Nov 21", and carried tasks show "carried 3× · since Nov 18" in a color that gets more urgent each day. Drop, snooze and Someday. Accomplishment report |
+| TODO lists | Days stacked on one page. **Start Today** adds your template and carries over everything unfinished. Old copies show "→ moved to Nov 21", and carried tasks show "carried 3× · since Nov 18" in a color that gets more urgent each day. Drop, snooze and Someday. **Sections** split each day into groups like 💼 Work and 🏠 Personal. Semi-monthly accomplishment report, drafted automatically, from your Work section only |
+| Focus | Pomodoro timer: 25/5, 30/5, 50/10 or your own minutes, sets, long breaks, sounds and notifications. Shows in the tab title, the sidebar and a corner timer; **Keep on top** opens a mini window. Focus on a task from its ⋯ menu. Daily goal, streak and last 7 days |
 | AI (Claude) | Inline suggestions (Tab to accept). "Suggested for today" from your calendar, notes and habits. **Ask my notes** (Ctrl+J) with citations. "Hide from AI" switch on each page |
 | Meetings | Meeting template, **Finish meeting** (summary, decisions, action items), text extraction from slide photos and PDFs, live transcript, Google Calendar |
 | Brain | 3D graph shaped like a brain (or 2D), timeline replay, AI-suggested links you confirm, editable Memory |
@@ -33,6 +34,8 @@ The full product spec and milestones are in [docs/PLAN.md](docs/PLAN.md).
 | Ctrl/⌘ J | Ask my notes |
 | Ctrl/⌘ Shift E | Quick capture |
 | Ctrl/⌘ \ | Toggle sidebar |
+| Ctrl/⌘ Z, Ctrl/⌘ Y (or Shift Z) | Undo / redo: text, titles, pages moved or deleted, database cells |
+| Alt ↑ / ↓ (or Ctrl/⌘ Shift ↑ / ↓) | Move the current task or block up / down (tasks move into the next section too) |
 | Tab | Accept AI suggestion (indents when no suggestion is showing) |
 | Esc | Dismiss AI suggestion |
 

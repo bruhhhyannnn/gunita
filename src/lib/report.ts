@@ -217,7 +217,11 @@ export function findReportPage(listId: string, period: Period): PageMeta | undef
  * Builds (or rebuilds) the report page for a list and period. With AI grouping,
  * Claude rewrites the tasks as accomplishments grouped by project.
  */
-export async function generateReport(listId: string, period: Period, opts: { useAi?: boolean } = {}): Promise<{ pageId: string; count: number; usedAi: boolean }> {
+export async function generateReport(
+  listId: string,
+  period: Period,
+  opts: { useAi?: boolean; auto?: boolean } = {},
+): Promise<{ pageId: string; count: number; usedAi: boolean }> {
   const { ws, config } = getApp()
   const list = ws.page(listId)
   if (!list) throw new Error('That TODO list no longer exists.')
@@ -241,7 +245,7 @@ export async function generateReport(listId: string, period: Period, opts: { use
   } else groups = settings.grouping === 'day' ? groupByDay(done) : groupByParent(done)
 
   const existing = findReportPage(listId, period)
-  const pageId =
+  const create = () =>
     existing?.id ??
     ws.createPage({
       parentId: reportsFolder(list),
@@ -249,6 +253,8 @@ export async function generateReport(listId: string, period: Period, opts: { use
       icon: '📝',
       reportFor: { listId, from: period.from, to: period.to },
     })
+  // A draft made automatically isn't something Ctrl+Z should remove.
+  const pageId = opts.auto ? ws.untracked(create) : create()
   await writePageDoc(pageId, reportDoc(settings, period, absent, groups))
   ws.touch(pageId)
   return { pageId, count: done.length, usedAi }
@@ -275,8 +281,8 @@ export async function autoDraftReports(): Promise<{ listId: string; pageId: stri
       // Only lists that were actually used during the period.
       const days = index.get(list.id)?.days ?? []
       if (!days.some((d) => d >= period.from && d <= period.to)) continue
-      const r = await generateReport(list.id, period)
-      ws.updatePage(list.id, { report: { ...settings, lastAuto: period.from } })
+      const r = await generateReport(list.id, period, { auto: true })
+      ws.untracked(() => ws.updatePage(list.id, { report: { ...settings, lastAuto: period.from } }))
       made.push({ listId: list.id, pageId: r.pageId, period })
     }
     return made

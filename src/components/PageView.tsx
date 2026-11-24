@@ -12,6 +12,7 @@ import {
   Star,
   Trash2,
   Undo2,
+  Redo2,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Editor } from '@tiptap/react'
@@ -38,6 +39,7 @@ import { ReportToolbar } from './todo/ReportToolbar'
 import { SharePopover } from './SharePopover'
 import { aiExtensions } from '#/ai/extensions'
 import { useDocumentTitle } from '#/lib/title'
+import { runUndo, useUndoState } from '#/lib/undo'
 import { TodoDecorations } from '#/todo/plugin'
 
 export function PageView({ pageId }: { pageId: string }) {
@@ -120,6 +122,21 @@ function TrashBanner({ page }: { page: PageMeta }) {
   )
 }
 
+function UndoButtons() {
+  const { canUndo, canRedo } = useUndoState()
+  const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
+  return (
+    <>
+      <IconBtn title={`Undo (${mac ? '⌘Z' : 'Ctrl+Z'})`} disabled={!canUndo} onClick={() => runUndo('undo')}>
+        <Undo2 className="h-4 w-4" />
+      </IconBtn>
+      <IconBtn title={`Redo (${mac ? '⌘⇧Z' : 'Ctrl+Y'})`} disabled={!canRedo} onClick={() => runUndo('redo')}>
+        <Redo2 className="h-4 w-4" />
+      </IconBtn>
+    </>
+  )
+}
+
 function TopBar({ page }: { page: PageMeta }) {
   const openPage = useOpenPage()
   const navigate = useNavigate()
@@ -138,6 +155,7 @@ function TopBar({ page }: { page: PageMeta }) {
         ))}
       </div>
       <span className="mr-2 hidden text-xs text-faint sm:inline">Edited {timeAgo(page.updatedAt)}</span>
+      <UndoButtons />
       <SharePopover page={page} />
       <IconBtn title={page.favorite ? 'Remove from favorites' : 'Add to favorites'} onClick={() => getApp().ws.updatePage(page.id, { favorite: page.favorite ? undefined : true })}>
         <Star className={cn('h-4 w-4', page.favorite && 'fill-[#e9a800] text-[#e9a800]')} />
@@ -193,9 +211,15 @@ function TopBar({ page }: { page: PageMeta }) {
   )
 }
 
-function IconBtn({ title, onClick, children }: { title: string; onClick: () => void; children: ReactNode }) {
+function IconBtn({ title, onClick, children, disabled }: { title: string; onClick: () => void; children: ReactNode; disabled?: boolean }) {
   return (
-    <button title={title} onClick={onClick} className="grid h-7 w-7 place-items-center rounded-md text-muted hover:bg-hover">
+    <button
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      disabled={disabled}
+      className="grid h-7 w-7 place-items-center rounded-md text-muted hover:bg-hover disabled:pointer-events-none disabled:opacity-35"
+    >
       {children}
     </button>
   )
@@ -331,6 +355,8 @@ function Header({ page }: { page: PageMeta }) {
       <textarea
         ref={ref}
         rows={1}
+        // Ctrl+Z here uses the app history (typing a title saves on every key).
+        data-app-undo
         value={page.title}
         placeholder={page.kind === 'todo' ? 'TODO list' : page.kind === 'meeting' ? 'Meeting title' : 'Untitled'}
         onChange={(e) => getApp().ws.updatePage(page.id, { title: e.target.value.replace(/\n/g, ' ') })}

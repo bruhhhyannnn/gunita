@@ -14,6 +14,7 @@ import {
   Plus,
   Search,
   Settings,
+  Timer,
   Sparkles,
   Star,
   StarOff,
@@ -33,6 +34,7 @@ import { timeAgo } from '#/lib/dates'
 import { PageIcon } from './PageIcon'
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from './ui/menu'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { fmt, timeLeft, useFocusRun, useNow } from '#/lib/focus'
 import { cn } from './ui/cn'
 import { toast } from './ui/toast'
 
@@ -113,6 +115,7 @@ export function Sidebar() {
           <NavItem icon={<Sparkles />} label="Ask my notes" onClick={() => setUi((s) => ({ askOpen: !s.askOpen }))} />
           <NavItem icon={<Home />} label="Home" onClick={() => void navigate({ to: '/' })} />
           <NavItem icon={<Brain />} label="Brain" onClick={() => void navigate({ to: '/brain' })} />
+          <FocusNav onClick={() => void navigate({ to: '/focus' })} />
           <NavItem icon={<Settings />} label="Settings" onClick={() => void navigate({ to: '/settings' })} />
         </div>
 
@@ -234,6 +237,21 @@ function UserMenu() {
         <ChevronsLeft className="h-4 w-4" />
       </button>
     </div>
+  )
+}
+
+/** "Focus" in the sidebar, with the time left while a session runs. */
+function FocusNav({ onClick }: { onClick: () => void }) {
+  const run = useFocusRun()
+  const now = useNow(run?.status === 'running')
+  const live = run && run.status !== 'done'
+  return (
+    <NavItem
+      icon={<Timer className={cn(live && (run.phase === 'focus' ? 'text-accent' : 'text-[#2e9f6b]'))} />}
+      label="Focus"
+      hint={live ? `${run.status === 'running' ? '' : '⏸ '}${fmt(timeLeft(run, now))}` : undefined}
+      onClick={onClick}
+    />
   )
 }
 
