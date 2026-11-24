@@ -59,6 +59,17 @@ export interface TemplateItem {
   text: string
   repeat: Recurrence
   children?: TemplateItem[]
+  /** Which section of the day it goes in (top-level items only). */
+  section?: string
+}
+
+/** A group inside each TODO day, like "💼 Work" or "🏠 Personal". */
+export interface TodoSectionDef {
+  id: string
+  name: string
+  icon: string
+  /** Only tasks in these sections go into the accomplishment report. */
+  report: boolean
 }
 
 // ---------- Accomplishment reports ----------
@@ -121,6 +132,8 @@ export interface PageMeta {
   /** For kind === 'todo'. */
   template?: TemplateItem[]
   autoStart?: boolean
+  /** For TODO lists: the sections each day is split into. */
+  sections?: TodoSectionDef[]
   /** For kind === 'meeting'. */
   meeting?: MeetingInfo
   /** For TODO lists: accomplishment report settings. */

@@ -108,6 +108,11 @@ export function docToMarkdown(doc: Y.Doc, titleOf: (id: string) => string = () =
           ...rows.slice(1).map((r) => '| ' + r.join(' | ') + ' |'),
         ]
       }
+      case 'todoSection': {
+        const lines = ['### ' + [el.getAttribute('icon'), el.getAttribute('name')].filter(Boolean).join(' ')]
+        for (const k of kids) lines.push(...block(k, indent))
+        return lines
+      }
       case 'todoDay': {
         const lines = ['## ' + (el.getAttribute('date') as string)]
         for (const k of kids) lines.push(...block(k, indent), '')

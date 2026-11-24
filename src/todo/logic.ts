@@ -1,10 +1,10 @@
 import type { Editor, JSONContent } from '@tiptap/core'
 import type { Node as PMNode } from '@tiptap/pm/model'
-import { Selection } from '@tiptap/pm/state'
+import { Selection, type Transaction } from '@tiptap/pm/state'
 import { getApp } from '#/lib/app'
 import { newId } from '#/lib/ids'
 import { isoDate, parseIso } from '#/lib/dates'
-import type { PageMeta, Recurrence, TemplateItem } from '#/lib/types'
+import type { PageMeta, Recurrence, TemplateItem, TodoSectionDef } from '#/lib/types'
 
 export const SOMEDAY = 'someday'
 
@@ -22,11 +22,17 @@ interface Mark {
   attrs: Record<string, unknown>
 }
 
+/** A task for today's section, and which section of the day it goes in (null: no section). */
+export interface Placed {
+  item: JSONContent
+  section: string | null
+}
+
 export interface CarryPlan {
   today: string
   alreadyStarted: boolean
-  carried: JSONContent[]
-  template: JSONContent[]
+  carried: Placed[]
+  template: Placed[]
   inboxCount: number
   marks: Mark[]
   insertPos: number
@@ -62,8 +68,10 @@ export function planToday(editor: Editor, page: PageMeta): CarryPlan {
   let alreadyStarted = false
   let insertPos = -1
   const marks: Mark[] = []
-  const carried: JSONContent[] = []
+  const carried: Placed[] = []
   const seenTaskIds = new Map<string, string>()
+  const known = new Set((page.sections ?? []).map((x) => x.id))
+  const sectionOrNull = (id: unknown) => (typeof id === 'string' && known.has(id) ? id : null)
 
   const carryItem = (item: PMNode, pos: number, dayDate: string | null): JSONContent | null => {
     if (!isOpen(item, today)) return null
@@ -114,18 +122,21 @@ export function planToday(editor: Editor, page: PageMeta): CarryPlan {
     }
   }
 
-  const collectLists = (node: PMNode, nodePos: number, dayDate: string | null) => {
-    node.descendants((child, rel, parent) => {
-      if (child.type.name === 'taskList' && parent?.type.name !== 'taskItem') {
-        const listPos = nodePos + 1 + rel
-        child.forEach((item, off) => {
+  // Finds the top-level task lists in a block (inside sections, callouts, …) and carries their tasks.
+  const collect = (node: PMNode, contentStart: number, dayDate: string | null, section: string | null) => {
+    node.forEach((child, off) => {
+      const p = contentStart + off
+      if (child.type.name === 'taskList') {
+        child.forEach((item, ioff) => {
           if (item.type.name !== 'taskItem') return
-          const j = carryItem(item, listPos + 1 + off, dayDate)
-          if (j) carried.push(j)
+          const j = carryItem(item, p + 1 + ioff, dayDate)
+          if (j) carried.push({ item: j, section: sectionOrNull(section) })
         })
-        return false
+      } else if (child.type.name === 'todoSection') {
+        collect(child, p + 1, dayDate, child.attrs.sectionId as string)
+      } else if (!child.isTextblock && !child.isLeaf && child.type.name !== 'taskItem') {
+        collect(child, p + 1, dayDate, section)
       }
-      return child.type.name !== 'taskItem'
     })
   }
 
@@ -138,32 +149,35 @@ export function planToday(editor: Editor, page: PageMeta): CarryPlan {
         return
       }
       if (date === SOMEDAY || date > today) return
-      collectLists(node, pos, date)
+      collect(node, pos + 1, date, null)
     } else if (node.type.name === 'taskList') {
       // Tasks outside any day (e.g. imported from Notion) are carried too.
       node.forEach((item, off) => {
         if (item.type.name !== 'taskItem') return
         const j = carryItem(item, pos + 1 + off, null)
-        if (j) carried.push(j)
+        if (j) carried.push({ item: j, section: null })
       })
-    } else if (node.type.name !== 'todoDay') {
-      collectLists(node, pos, null)
+    } else if (!node.isTextblock && !node.isLeaf) {
+      collect(node, pos + 1, null, node.type.name === 'todoSection' ? (node.attrs.sectionId as string) : null)
     }
   })
   if (insertPos < 0) insertPos = 0
 
   // Template items due today. If yesterday's copy is still open, it carries
   // over in the template's slot (keeping its "carried N×" count) instead of duplicating.
-  const template: JSONContent[] = []
+  const template: Placed[] = []
   const build = (items: TemplateItem[]): JSONContent[] =>
     items
       .filter((t) => dueOn(t.repeat, today) && t.text.trim())
       .map((t) => {
-        const idx = carried.findIndex((c) => c.attrs?.templateId === t.id)
-        if (idx >= 0) return carried.splice(idx, 1)[0]
+        const idx = carried.findIndex((c) => c.item.attrs?.templateId === t.id)
+        if (idx >= 0) return carried.splice(idx, 1)[0].item
         return taskJson(t.text, { taskId: newId(), since: today, templateId: t.id }, build(t.children ?? []))
       })
-  template.push(...build(page.template ?? []))
+  for (const t of page.template ?? []) {
+    const [item] = build([t])
+    if (item) template.push({ item, section: sectionOrNull(t.section) })
+  }
 
   const inboxCount = getApp().ws.getSnapshot().inbox.filter((i) => i.listId === page.id || !i.listId).length
   return { today, alreadyStarted, carried, template, inboxCount, marks, insertPos }
@@ -176,18 +190,46 @@ export function isFirstList(pageId: string) {
   return lists[0]?.id === pageId
 }
 
+function emptyTask(today: string): JSONContent {
+  return taskJson('', { taskId: newId(), since: today })
+}
+
+function sectionJson(def: Pick<TodoSectionDef, 'id' | 'name' | 'icon'>, content: JSONContent[]): JSONContent {
+  return { type: 'todoSection', attrs: { sectionId: def.id, name: def.name, icon: def.icon }, content }
+}
+
+/** Today's content: tasks without a section first, then each section in the list's order. */
+export function dayContent(placed: Placed[], sections: TodoSectionDef[], today: string): JSONContent[] {
+  const out: JSONContent[] = []
+  const loose = placed.filter((p) => !p.section).map((p) => p.item)
+  if (loose.length) out.push({ type: 'taskList', content: loose })
+  for (const def of sections) {
+    const items = placed.filter((p) => p.section === def.id).map((p) => p.item)
+    out.push(sectionJson(def, [{ type: 'taskList', content: items.length ? items : [emptyTask(today)] }]))
+  }
+  return out.length ? out : [{ type: 'paragraph' }]
+}
+
+/** The first section that counts for the report (where meeting action items go). */
+export function workSection(page: PageMeta): string | null {
+  return page.sections?.find((x) => x.report)?.id ?? null
+}
+
 /** Adds today's section: template items, everything unfinished from earlier days, and inbox items. */
 export function startToday(editor: Editor, page: PageMeta): { started: boolean; carried: number; template: number; inbox: number } {
   repairDays(editor)
   const plan = planToday(editor, page)
   if (plan.alreadyStarted) return { started: false, carried: 0, template: 0, inbox: 0 }
   const inbox = getApp().ws.takeInbox(page.id, isFirstList(page.id))
-  const inboxItems = inbox.map((i) => taskJson(i.text, { taskId: newId(), since: plan.today, source: i.sourceId ?? null }))
-  const items = [...plan.template, ...plan.carried, ...inboxItems]
+  const inboxItems: Placed[] = inbox.map((i) => ({
+    item: taskJson(i.text, { taskId: newId(), since: plan.today, source: i.sourceId ?? null }),
+    // Action items from meetings are work; quick captures stay outside the sections.
+    section: i.sourceId ? workSection(page) : null,
+  }))
   const day: JSONContent = {
     type: 'todoDay',
     attrs: { date: plan.today },
-    content: items.length ? [{ type: 'taskList', content: items }] : [{ type: 'paragraph' }],
+    content: dayContent([...plan.template, ...plan.carried, ...inboxItems], page.sections ?? [], plan.today),
   }
   const { state, view } = editor
   const tr = state.tr
@@ -199,6 +241,120 @@ export function startToday(editor: Editor, page: PageMeta): { started: boolean; 
   // Put the cursor at the end of today's list so you can keep typing tasks.
   requestAnimationFrame(() => focusToday(editor))
   return { started: true, carried: plan.carried.length, template: plan.template.length, inbox: inboxItems.length }
+}
+
+/** The id of the section a position is in, if any. */
+export function sectionAt(doc: PMNode, pos: number): string | null {
+  const $pos = doc.resolve(Math.min(pos, doc.content.size))
+  for (let d = $pos.depth; d > 0; d--) if ($pos.node(d).type.name === 'todoSection') return $pos.node(d).attrs.sectionId as string
+  return null
+}
+
+/** The day section a position is in. */
+function dayAt(doc: PMNode, pos: number): { node: PMNode; pos: number } | null {
+  const $pos = doc.resolve(Math.min(pos, doc.content.size))
+  for (let d = $pos.depth; d > 0; d--) if ($pos.node(d).type.name === 'todoDay') return { node: $pos.node(d), pos: $pos.before(d) }
+  return null
+}
+
+/** Where a task goes in a day: the end of a section's last list, or of the list outside sections. */
+function listSlot(day: { node: PMNode; pos: number }, section: string | null): { pos: number; wrap: boolean } | null {
+  let found: { pos: number; wrap: boolean } | null = null
+  day.node.forEach((child, off) => {
+    const p = day.pos + 1 + off
+    if (section && child.type.name === 'todoSection' && child.attrs.sectionId === section) {
+      found = { pos: p + child.nodeSize - 1, wrap: true }
+      child.forEach((gc, goff) => {
+        if (gc.type.name === 'taskList') found = { pos: p + 1 + goff + gc.nodeSize - 1, wrap: false }
+      })
+    } else if (!section && child.type.name === 'taskList') found = { pos: p + child.nodeSize - 1, wrap: false }
+  })
+  return found
+}
+
+/** Removes a task, and its list if it was the only task (leaving a blank line if the list was alone). */
+function removeItem(tr: Transaction, pos: number, size: number) {
+  const $pos = tr.doc.resolve(pos)
+  const list = $pos.parent
+  if (list.type.name === 'taskList' && list.childCount === 1) {
+    const container = $pos.node($pos.depth - 1)
+    if (container.childCount === 1) tr.replaceWith($pos.before(), $pos.after(), tr.doc.type.schema.nodes.paragraph.create())
+    else tr.delete($pos.before(), $pos.after())
+  } else tr.delete(pos, pos + size)
+}
+
+/** Puts a task at the end of a section (or outside sections) of a day, making the section if needed. */
+function insertInDay(tr: Transaction, dayPos: number, item: PMNode, section: string | null, def?: Pick<TodoSectionDef, 'id' | 'name' | 'icon'>) {
+  const schema = tr.doc.type.schema
+  const day = { node: tr.doc.nodeAt(dayPos)!, pos: dayPos }
+  const slot = listSlot(day, section)
+  if (slot) {
+    tr.insert(slot.pos, slot.wrap ? schema.nodes.taskList.create(null, item) : item)
+    return
+  }
+  const list = schema.nodes.taskList.create(null, item)
+  if (section) {
+    const node = schema.nodes.todoSection.create({ sectionId: section, name: def?.name ?? '', icon: def?.icon ?? '' }, list)
+    tr.insert(dayPos + day.node.nodeSize - 1, node)
+  } else {
+    // Tasks outside sections come first in the day.
+    let hasSections = false
+    day.node.forEach((c) => (hasSections ||= c.type.name === 'todoSection'))
+    tr.insert(hasSections ? dayPos + 1 : dayPos + day.node.nodeSize - 1, list)
+  }
+}
+
+/** Moves a task (with its sub-tasks) to another section of the same day. */
+export function moveTaskToSection(editor: Editor, pos: number, section: string | null, page: PageMeta) {
+  const node = itemAt(editor, pos)
+  if (!node) return
+  const day = dayAt(editor.state.doc, pos)
+  if (!day) return
+  const tr = editor.state.tr
+  removeItem(tr, pos, node.nodeSize)
+  const dayPos = tr.mapping.map(day.pos)
+  insertInDay(tr, dayPos, node, section, page.sections?.find((x) => x.id === section))
+  editor.view.dispatch(tr.scrollIntoView())
+}
+
+/**
+ * Brings today's day in line with the list's sections: adds missing ones,
+ * puts them in order, and unwraps removed ones. Optionally moves today's tasks
+ * that aren't in a section into one.
+ */
+export function applySections(editor: Editor, sections: TodoSectionDef[], moveLooseTo: string | null = null) {
+  const day = findDay(editor, isoDate())
+  if (!day) return
+  const json = day.node.toJSON() as JSONContent
+  const keep: JSONContent[] = []
+  const existing = new Map<string, JSONContent>()
+  const loose: JSONContent[] = []
+  const known = new Set(sections.map((x) => x.id))
+  for (const child of json.content ?? []) {
+    if (child.type === 'todoSection') {
+      const id = child.attrs?.sectionId as string
+      if (known.has(id) && !existing.has(id)) existing.set(id, child)
+      else keep.push(...(child.content ?? [])) // removed (or duplicate) section: keep its tasks
+    } else if (moveLooseTo && child.type === 'taskList') loose.push(...(child.content ?? []))
+    else keep.push(child)
+  }
+  const out = moveLooseTo ? keep.filter((c) => !(c.type === 'paragraph' && !c.content?.length)) : keep
+  for (const def of sections) {
+    const node = existing.get(def.id) ?? sectionJson(def, [{ type: 'taskList', content: [emptyTask(day.node.attrs.date as string)] }])
+    node.attrs = { ...node.attrs, name: def.name, icon: def.icon }
+    if (def.id === moveLooseTo && loose.length) {
+      const content = node.content ?? []
+      const first = content.findIndex((c) => c.type === 'taskList')
+      // Replace a lone blank task, else put the moved tasks first.
+      const blank = first >= 0 && content[first].content?.length === 1 && !content[first].content?.[0].content?.[0]?.content?.length
+      if (first >= 0) content[first] = { ...content[first], content: blank ? loose : [...loose, ...(content[first].content ?? [])] }
+      else content.unshift({ type: 'taskList', content: loose })
+      node.content = content
+    }
+    out.push(node)
+  }
+  const next = editor.state.schema.nodeFromJSON({ ...json, content: out.length ? out : [{ type: 'paragraph' }] })
+  editor.view.dispatch(editor.state.tr.replaceWith(day.pos, day.pos + day.node.nodeSize, next))
 }
 
 export function findDay(editor: Editor, date: string): { node: PMNode; pos: number } | null {
@@ -282,7 +438,7 @@ export function snoozeTask(editor: Editor, pos: number, until: string) {
   setTaskAttrs(editor, pos, { status: 'snoozed', snoozeUntil: until })
 }
 
-/** Moves a task (with its sub-tasks) into another day section, creating the section if needed. */
+/** Moves a task (with its sub-tasks) into another day, in the same section, creating the day if needed. */
 export function moveTaskToDay(editor: Editor, pos: number, date: string) {
   const node = itemAt(editor, pos)
   if (!node) return
@@ -291,45 +447,44 @@ export function moveTaskToDay(editor: Editor, pos: number, date: string) {
     { ...node.attrs, status: null, movedTo: null, snoozeUntil: null, since: node.attrs.since || isoDate() },
     node.content,
   )
-  let tr = editor.state.tr
-  // Remove the item; if its list becomes empty, remove the list too.
-  const $pos = tr.doc.resolve(pos)
-  const list = $pos.parent
-  if (list.type.name === 'taskList' && list.childCount === 1) {
-    tr = tr.delete($pos.before(), $pos.after())
-  } else tr = tr.delete(pos, pos + node.nodeSize)
+  const section = sectionAt(editor.state.doc, pos)
+  let def: { id: string; name: string; icon: string } | undefined
+  if (section) {
+    const $pos = editor.state.doc.resolve(pos)
+    for (let d = $pos.depth; d > 0; d--) {
+      const n = $pos.node(d)
+      if (n.type.name === 'todoSection') def = { id: section, name: n.attrs.name as string, icon: n.attrs.icon as string }
+    }
+  }
+  const tr = editor.state.tr
+  removeItem(tr, pos, node.nodeSize)
 
-  let day: { node: PMNode; pos: number } | null = null
+  let dayPos = -1
   tr.doc.forEach((n, p) => {
-    if (!day && n.type.name === 'todoDay' && n.attrs.date === date) day = { node: n, pos: p }
+    if (dayPos < 0 && n.type.name === 'todoDay' && n.attrs.date === date) dayPos = p
   })
-  if (!day) {
-    const section = schema.nodes.todoDay.create({ date }, [schema.nodes.taskList.create(null, [moved])])
-    if (date === SOMEDAY) tr.insert(tr.doc.content.size, section)
+  if (dayPos < 0) {
+    const list = schema.nodes.taskList.create(null, [moved])
+    const content = section ? schema.nodes.todoSection.create({ sectionId: section, name: def?.name ?? '', icon: def?.icon ?? '' }, list) : list
+    const created = schema.nodes.todoDay.create({ date }, [content])
+    if (date === SOMEDAY) tr.insert(tr.doc.content.size, created)
     else {
       let at = -1
       tr.doc.forEach((n, p) => {
         if (at < 0 && n.type.name === 'todoDay' && n.attrs.date !== SOMEDAY && n.attrs.date < date) at = p
       })
       if (at < 0) at = 0
-      tr.insert(at, section)
+      tr.insert(at, created)
     }
-  } else {
-    const d = day as { node: PMNode; pos: number }
-    let lastList: { node: PMNode; pos: number } | null = null
-    d.node.forEach((child, off) => {
-      if (child.type.name === 'taskList') lastList = { node: child, pos: d.pos + 1 + off }
-    })
-    if (lastList) {
-      const l = lastList as { node: PMNode; pos: number }
-      tr.insert(l.pos + l.node.nodeSize - 1, moved)
-    } else tr.insert(d.pos + d.node.nodeSize - 1, schema.nodes.taskList.create(null, [moved]))
-  }
+  } else insertInDay(tr, dayPos, moved, section, def)
   editor.view.dispatch(tr)
 }
 
-/** Adds a task at the end of today's list (used when accepting AI suggestions). */
-export function appendTaskToday(editor: Editor, text: string, attrs: Record<string, unknown> = {}) {
+/**
+ * Adds a task at the end of today's list (used for AI suggestions and inbox items).
+ * It goes in `section` if given, else the section the cursor is in, else the list outside sections.
+ */
+export function appendTaskToday(editor: Editor, text: string, attrs: Record<string, unknown> = {}, section?: string | null) {
   const day = findDay(editor, isoDate())
   if (!day) return false
   const { schema } = editor.state
@@ -337,47 +492,24 @@ export function appendTaskToday(editor: Editor, text: string, attrs: Record<stri
     { checked: false, taskId: newId(), since: isoDate(), ...attrs },
     schema.nodes.paragraph.create(null, text ? schema.text(text) : null),
   )
-  let lastList: { node: PMNode; pos: number } | null = null
-  day.node.forEach((child, off) => {
-    if (child.type.name === 'taskList') lastList = { node: child, pos: day.pos + 1 + off }
-  })
+  const sel = editor.state.selection.from
+  const inToday = sel > day.pos && sel < day.pos + day.node.nodeSize
+  let target = section !== undefined ? section : inToday ? sectionAt(editor.state.doc, sel) : null
+  // No list outside sections: use the first section.
+  if (!target && !listSlot(day, null)) {
+    day.node.forEach((c) => {
+      if (!target && c.type.name === 'todoSection') target = c.attrs.sectionId as string
+    })
+  }
+  const slot = listSlot(day, target)
   const tr = editor.state.tr
-  if (lastList) {
-    const l = lastList as { node: PMNode; pos: number }
+  if (slot && !slot.wrap) {
     // Reuse a trailing empty task instead of leaving a blank line above the new one.
-    const last = l.node.lastChild
-    if (last && last.textContent === '' && last.childCount === 1) {
-      const lastPos = l.pos + l.node.nodeSize - 1 - last.nodeSize
-      tr.replaceWith(lastPos, lastPos + last.nodeSize, item)
-    } else tr.insert(l.pos + l.node.nodeSize - 1, item)
-  } else tr.insert(day.pos + day.node.nodeSize - 1, schema.nodes.taskList.create(null, [item]))
+    const $end = tr.doc.resolve(slot.pos)
+    const last = $end.parent.lastChild
+    if (last && last.textContent === '' && last.childCount === 1) tr.replaceWith(slot.pos - last.nodeSize, slot.pos, item)
+    else tr.insert(slot.pos, item)
+  } else insertInDay(tr, day.pos, item, target)
   editor.view.dispatch(tr)
   return true
-}
-
-// ---------- Accomplishment report ----------
-
-export interface DoneTask {
-  day: string
-  text: string
-  depth: number
-}
-
-export function doneTasks(editor: Editor, from: string, to: string): DoneTask[] {
-  const out: DoneTask[] = []
-  editor.state.doc.forEach((node) => {
-    if (node.type.name !== 'todoDay') return
-    const day = node.attrs.date as string
-    if (day === SOMEDAY || day < from || day > to) return
-    const walk = (n: PMNode, depth: number) => {
-      n.forEach((c) => {
-        if (c.type.name === 'taskItem') {
-          if (c.attrs.checked) out.push({ day, text: c.firstChild?.textContent.trim() ?? '', depth })
-          c.forEach((cc) => cc.type.name === 'taskList' && walk(cc, depth + 1))
-        } else if (c.type.name === 'taskList' || !c.isTextblock) walk(c, depth)
-      })
-    }
-    walk(node, 0)
-  })
-  return out.filter((t) => t.text).sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0))
 }

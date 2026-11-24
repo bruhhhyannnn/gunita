@@ -10,7 +10,7 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 import { GripVertical } from 'lucide-react'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { newId } from '#/lib/ids'
-import type { Recurrence, TemplateItem } from '#/lib/types'
+import type { Recurrence, TemplateItem, TodoSectionDef } from '#/lib/types'
 import { MoveBlock } from '#/editor/moveBlock'
 import { Popover, PopoverAnchor, PopoverContent } from '../ui/popover'
 import { cn } from '../ui/cn'
@@ -18,6 +18,7 @@ import { Input } from '../ui/input'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const REPEAT_EVENT = 'gunita:repeat-menu'
+const SECTION_EVENT = 'gunita:template-section-menu'
 
 export function repeatLabel(r: Recurrence | null | undefined): string {
   if (!r || r.kind === 'daily') return 'Every day'
@@ -37,6 +38,7 @@ const TemplateItemNode = TaskItem.extend({
       ...this.parent?.(),
       templateId: { default: null, keepOnSplit: false, renderHTML: () => ({}) },
       repeat: { default: null, keepOnSplit: false, renderHTML: () => ({}) },
+      section: { default: null, renderHTML: () => ({}) },
     }
   },
 }).configure({ nested: true })
@@ -47,16 +49,59 @@ interface RepeatEvent {
   repeat: Recurrence | null
 }
 
-/** "Every day" chip at the end of each task; click it to change how often it repeats. */
-const RepeatChips = Extension.create({
+interface SectionEvent {
+  pos: number
+  rect: DOMRect
+  section: string | null
+}
+
+function chip(label: string, className: string, onDown: (el: HTMLElement) => void) {
+  const el = document.createElement('button')
+  el.type = 'button'
+  el.className = className
+  el.contentEditable = 'false'
+  el.textContent = label
+  el.addEventListener('mousedown', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onDown(el)
+  })
+  return el
+}
+
+/**
+ * Chips at the end of each task: how often it repeats ("Every day"), and for
+ * top-level tasks which section of the day it goes in ("💼 Work").
+ */
+const RepeatChips = Extension.create<{ sections: TodoSectionDef[] }>({
   name: 'repeatChips',
+  addOptions() {
+    return { sections: [] }
+  },
   addProseMirrorPlugins() {
     const key = new PluginKey<DecorationSet>('repeatChips')
+    const sections = this.options.sections
     const build = (doc: PMNode) => {
       const decos: Decoration[] = []
       doc.descendants((node, pos) => {
         if (node.type.name !== 'taskItem' || !node.firstChild) return true
         const end = pos + 1 + node.firstChild.nodeSize - 1
+        const top = doc.resolve(pos).depth === 1
+        if (top && sections.length) {
+          const id = node.attrs.section as string | null
+          const def = sections.find((x) => x.id === id)
+          const label = def ? `${def.icon} ${def.name}`.trim() : 'No section'
+          decos.push(
+            Decoration.widget(
+              end,
+              () =>
+                chip(label, cn('repeat-chip section-chip', !def && 'is-empty'), (el) =>
+                  window.dispatchEvent(new CustomEvent<SectionEvent>(SECTION_EVENT, { detail: { pos, rect: el.getBoundingClientRect(), section: def?.id ?? null } })),
+                ),
+              { side: 2, ignoreSelection: true, key: `s-${pos}-${label}` },
+            ),
+          )
+        }
         const repeat = node.attrs.repeat as Recurrence | null
         decos.push(
           Decoration.widget(
@@ -94,7 +139,7 @@ const RepeatChips = Extension.create({
 function toJson(items: TemplateItem[]): JSONContent {
   const item = (t: TemplateItem): JSONContent => ({
     type: 'taskItem',
-    attrs: { checked: false, templateId: t.id, repeat: t.repeat },
+    attrs: { checked: false, templateId: t.id, repeat: t.repeat, section: t.section ?? null },
     content: [
       { type: 'paragraph', content: t.text ? [{ type: 'text', text: t.text }] : [] },
       ...(t.children?.length ? [{ type: 'taskList', content: t.children.map(item) }] : []),
@@ -105,22 +150,25 @@ function toJson(items: TemplateItem[]): JSONContent {
 
 function fromJson(doc: JSONContent): TemplateItem[] {
   const text = (n: JSONContent | undefined): string => (n?.content ?? []).map((c) => c.text ?? '').join('').trim()
-  const list = (l: JSONContent | undefined): TemplateItem[] =>
+  const list = (l: JSONContent | undefined, top: boolean): TemplateItem[] =>
     (l?.content ?? [])
       .filter((n) => n.type === 'taskItem')
       .map((n) => {
         const para = n.content?.find((c) => c.type === 'paragraph')
         const sub = n.content?.find((c) => c.type === 'taskList')
-        return {
+        const item: TemplateItem = {
           id: (n.attrs?.templateId as string) || newId(),
           text: text(para),
           repeat: (n.attrs?.repeat as Recurrence | null) ?? { kind: 'daily' },
-          children: list(sub),
         }
+        const children = list(sub, false)
+        if (children.length) item.children = children
+        // Only top-level tasks have a section; sub-tasks go with their parent.
+        if (top && n.attrs?.section) item.section = n.attrs.section as string
+        return item
       })
       .filter((t) => t.text || t.children?.length)
-      .map((t) => (t.children?.length ? t : { id: t.id, text: t.text, repeat: t.repeat }))
-  return list(doc.content?.[0])
+  return list(doc.content?.[0], true)
 }
 
 export interface TemplateEditorHandle {
@@ -128,7 +176,10 @@ export interface TemplateEditorHandle {
 }
 
 /** Edits the daily template with the same task-list editor as pages: Tab / Shift+Tab, Enter, drag. */
-export const TemplateEditor = forwardRef<TemplateEditorHandle, { initial: TemplateItem[] }>(function TemplateEditor({ initial }, ref) {
+export const TemplateEditor = forwardRef<TemplateEditorHandle, { initial: TemplateItem[]; sections?: TodoSectionDef[] }>(function TemplateEditor(
+  { initial, sections = [] },
+  ref,
+) {
   const editor = useEditor(
     {
       extensions: [
@@ -149,7 +200,7 @@ export const TemplateEditor = forwardRef<TemplateEditorHandle, { initial: Templa
         TaskList,
         TemplateItemNode,
         Placeholder.configure({ placeholder: 'A task you do every day…' }),
-        RepeatChips,
+        RepeatChips.configure({ sections }),
         MoveBlock,
       ],
       content: toJson(initial),
@@ -182,6 +233,13 @@ export const TemplateEditor = forwardRef<TemplateEditorHandle, { initial: Templa
         onChange={(pos, repeat) => {
           const node = editor.state.doc.nodeAt(pos)
           if (node) editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, repeat }))
+        }}
+      />
+      <SectionMenu
+        sections={sections}
+        onChange={(pos, section) => {
+          const node = editor.state.doc.nodeAt(pos)
+          if (node) editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, section }))
         }}
       />
     </div>
@@ -252,6 +310,39 @@ function RepeatMenu({ onChange }: { onChange: (pos: number, repeat: Recurrence) 
             className="w-14 text-center"
           />
         </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function SectionMenu({ sections, onChange }: { sections: TodoSectionDef[]; onChange: (pos: number, section: string | null) => void }) {
+  const [ev, setEv] = useState<SectionEvent | null>(null)
+  useEffect(() => {
+    const on = (e: Event) => setEv((e as CustomEvent<SectionEvent>).detail)
+    window.addEventListener(SECTION_EVENT, on)
+    return () => window.removeEventListener(SECTION_EVENT, on)
+  }, [])
+  if (!ev) return null
+  const pick = (id: string | null) => {
+    onChange(ev.pos, id)
+    setEv(null)
+  }
+  return (
+    <Popover open onOpenChange={(o) => !o && setEv(null)}>
+      <PopoverAnchor asChild>
+        <span style={{ position: 'fixed', left: ev.rect.left, top: ev.rect.bottom, width: 1, height: 1 }} />
+      </PopoverAnchor>
+      <PopoverContent align="start" className="w-56 p-1 text-sm">
+        <div className="px-2 pb-1 pt-1 text-xs text-faint">Goes in section</div>
+        {sections.map((x) => (
+          <button key={x.id} onClick={() => pick(x.id)} className={cn('flex h-8 w-full items-center gap-2 rounded-md px-2 text-left hover:bg-hover', ev.section === x.id && 'text-accent')}>
+            <span>{x.icon}</span>
+            {x.name}
+          </button>
+        ))}
+        <button onClick={() => pick(null)} className={cn('flex h-8 w-full items-center rounded-md px-2 text-left text-muted hover:bg-hover', !ev.section && 'text-accent')}>
+          No section
+        </button>
       </PopoverContent>
     </Popover>
   )

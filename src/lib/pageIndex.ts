@@ -11,6 +11,7 @@ export interface IndexedTask {
   status?: string // 'moved' | 'dropped' | 'snoozed' | 'someday' | 'archived'
   templateId?: string
   day?: string // YYYY-MM-DD of the TODO day section it lives in
+  section?: string // id of the TODO section (e.g. Work) it lives in
   since?: string
   carry?: number
   depth: number
@@ -24,6 +25,8 @@ export interface PageIndexEntry {
   links: string[]
   dates: string[]
   days: string[]
+  /** Days that are split into sections (Work, Personal, …). */
+  sectionDays?: string[]
   updatedAt: number
 }
 
@@ -42,6 +45,7 @@ export function extract(id: string, doc: Y.Doc): PageIndexEntry {
   const links = new Set<string>()
   const dates = new Set<string>()
   const days: string[] = []
+  const sectionDays = new Set<string>()
 
   const textOf = (el: Y.XmlElement | Y.XmlFragment): string => {
     let s = ''
@@ -65,7 +69,7 @@ export function extract(id: string, doc: Y.Doc): PageIndexEntry {
     return s
   }
 
-  const walk = (el: Y.XmlElement | Y.XmlFragment, ctx: { day?: string; depth: number }) => {
+  const walk = (el: Y.XmlElement | Y.XmlFragment, ctx: { day?: string; section?: string; depth: number }) => {
     for (const c of el.toArray()) {
       if (!(c instanceof Y.XmlElement)) continue
       const name = c.nodeName
@@ -73,6 +77,11 @@ export function extract(id: string, doc: Y.Doc): PageIndexEntry {
         const day = c.getAttribute('date') as string
         if (day) days.push(day)
         walk(c, { ...ctx, day })
+        continue
+      }
+      if (name === 'todoSection') {
+        if (ctx.day) sectionDays.add(ctx.day)
+        walk(c, { ...ctx, section: (c.getAttribute('sectionId') as string) || undefined })
         continue
       }
       if (name === 'taskItem') {
@@ -87,6 +96,7 @@ export function extract(id: string, doc: Y.Doc): PageIndexEntry {
           status: (c.getAttribute('status') as string) || undefined,
           templateId: (c.getAttribute('templateId') as string) || undefined,
           day: ctx.day,
+          section: ctx.section,
           since: (c.getAttribute('since') as string) || undefined,
           carry: Number(c.getAttribute('carry') || 0) || undefined,
           depth: ctx.depth,
@@ -114,7 +124,7 @@ export function extract(id: string, doc: Y.Doc): PageIndexEntry {
   walk(frag, { depth: 0 })
   let text = lines.join('\n')
   if (text.length > MAX_TEXT) text = text.slice(0, MAX_TEXT)
-  return { id, text, headings, tasks, links: [...links], dates: [...dates], days, updatedAt: Date.now() }
+  return { id, text, headings, tasks, links: [...links], dates: [...dates], days, sectionDays: [...sectionDays], updatedAt: Date.now() }
 }
 
 function isTextBlock(n: string) {

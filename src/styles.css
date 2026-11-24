@@ -473,6 +473,7 @@ button {
 .dark .n-carry.u-red { color: #ff7b72; }
 
 .task-menu-btn {
+  user-select: none;
   margin-left: 6px;
   width: 20px;
   height: 18px;
@@ -522,3 +523,42 @@ button {
 }
 .repeat-chip:hover { color: var(--text); background: var(--bg-active); }
 .repeat-chip.is-custom { color: var(--accent); background: var(--accent-soft); }
+.section-chip { margin-left: 4px; color: var(--text-muted); }
+.section-chip.is-empty { color: var(--text-faint); background: none; border: 1px dashed var(--border); line-height: 16px; }
+
+/* ---------- Sections inside a TODO day (Work, Personal, …) ---------- */
+.todo-section { margin: 10px 0 6px; }
+.todo-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 3px;
+  margin-bottom: 2px;
+  user-select: none;
+}
+.todo-section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
+.todo-section.is-report .todo-section-title { color: var(--text); }
+.todo-section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  line-height: 16px;
+  padding: 0 6px;
+  border-radius: 8px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.todo-section-edit {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  padding: 0 6px;
+  border-radius: 4px;
+  opacity: 0;
+}
+.todo-section-header:hover .todo-section-edit, .todo-section-edit:focus-visible { opacity: 1; }
+.todo-section-edit:hover { background: var(--bg-hover); color: var(--text); }
+.todo-section .todo-day-progress { margin-left: auto; }
+.todo-section-body { padding-left: 4px; border-left: 2px solid var(--border); margin-left: 10px; padding-left: 12px; }
+.todo-section.is-report .todo-section-body { border-left-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+@media (hover: none) { .todo-section-edit { opacity: 0.7; } }

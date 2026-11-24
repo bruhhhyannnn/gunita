@@ -1,21 +1,24 @@
 import type { Editor } from '@tiptap/react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { FileText, ListChecks, Settings2, Sun } from 'lucide-react'
+import { FileText, LayoutList, ListChecks, Settings2, Sun } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { getApp, useIndexVersion, useWs } from '#/lib/app'
 import { isoDate } from '#/lib/dates'
 import type { PageMeta } from '#/lib/types'
-import { appendTaskToday, findDay, focusToday, isFirstList, planToday, repairDays, startToday } from '#/todo/logic'
+import { appendTaskToday, findDay, focusToday, isFirstList, planToday, repairDays, startToday, workSection } from '#/todo/logic'
 import { toast } from '../ui/toast'
 import { Button } from '../ui/button'
 import { TemplateDialog } from './TemplateDialog'
 import { ReportDialog } from './ReportDialog'
 import { TaskMenu } from './TaskMenu'
 import { DailyPlan } from './DailyPlan'
+import { SectionsDialog } from './SectionsDialog'
+import { SECTIONS_EVENT } from '#/todo/todoSection'
 
 export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor | null }) {
   const [templateOpen, setTemplateOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [sectionsOpen, setSectionsOpen] = useState(false)
   const [started, setStarted] = useState(true)
   const [preview, setPreview] = useState<{ carried: number; template: number; inbox: number } | null>(null)
   const search = useSearch({ strict: false }) as { start?: string }
@@ -42,6 +45,15 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
       editor.off('update', check)
     }
   }, [editor, page, inbox])
+
+  // The "Edit" button on a section's header opens the sections dialog.
+  useEffect(() => {
+    const on = (e: Event) => {
+      if ((e as CustomEvent<{ pageId: string }>).detail.pageId === page.id) setSectionsOpen(true)
+    }
+    window.addEventListener(SECTIONS_EVENT, on)
+    return () => window.removeEventListener(SECTIONS_EVENT, on)
+  }, [page.id])
 
   const run = () => {
     if (!editor) return
@@ -88,6 +100,9 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
         <Button variant="ghost" icon={<Settings2 />} onClick={() => setTemplateOpen(true)}>
           Template
         </Button>
+        <Button variant="ghost" icon={<LayoutList />} onClick={() => setSectionsOpen(true)}>
+          Sections
+        </Button>
         <Button variant="ghost" icon={<FileText />} onClick={() => setReportOpen(true)}>
           Report
         </Button>
@@ -125,7 +140,7 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
             size="sm"
             className="h-8"
             onClick={() => {
-              for (const item of getApp().ws.takeInbox(page.id, isFirstList(page.id))) appendTaskToday(editor, item.text, { source: item.sourceId ?? null })
+              for (const item of getApp().ws.takeInbox(page.id, isFirstList(page.id))) appendTaskToday(editor, item.text, { source: item.sourceId ?? null }, item.sourceId ? workSection(page) : null)
             }}
           >
             Add to today
@@ -137,6 +152,7 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
 
       <TemplateDialog page={page} open={templateOpen} onOpenChange={setTemplateOpen} />
       <ReportDialog page={page} editor={editor} open={reportOpen} onOpenChange={setReportOpen} />
+      <SectionsDialog page={page} editor={editor} open={sectionsOpen} onOpenChange={setSectionsOpen} />
       <TaskMenu pageId={page.id} />
     </div>
   )

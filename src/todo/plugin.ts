@@ -25,6 +25,8 @@ function note(text: string, cls: string) {
   el.className = `task-note ${cls}`
   el.contentEditable = 'false'
   el.textContent = text
+  // Clicking a badge keeps the caret in the text instead of moving it into the badge.
+  el.addEventListener('mousedown', (e) => e.preventDefault())
   return el
 }
 

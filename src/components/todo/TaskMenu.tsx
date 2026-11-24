@@ -1,10 +1,11 @@
 import { DropdownMenu } from 'radix-ui'
-import { CalendarClock, Moon, RotateCcw, Sun, XCircle } from 'lucide-react'
+import { CalendarClock, CornerDownRight, Moon, RotateCcw, Sun, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { editors } from '#/editor/PageEditor'
 import { addDays, isoDate } from '#/lib/dates'
 import { TASK_MENU_EVENT, type TaskMenuEvent } from '#/todo/plugin'
-import { dropTask, moveTaskToDay, restoreTask, snoozeTask, SOMEDAY } from '#/todo/logic'
+import { dropTask, moveTaskToDay, moveTaskToSection, restoreTask, sectionAt, snoozeTask, SOMEDAY } from '#/todo/logic'
+import { useWs } from '#/lib/app'
 import { MenuItem, MenuLabel, MenuSeparator } from '../ui/menu'
 import { Calendar } from '../ui/date-picker'
 
@@ -18,6 +19,7 @@ function nextMonday() {
 export function TaskMenu({ pageId }: { pageId: string }) {
   const [ev, setEv] = useState<TaskMenuEvent | null>(null)
   const [pick, setPick] = useState(false)
+  const page = useWs((s) => s.pages[pageId])
   useEffect(() => {
     const on = (e: Event) => {
       const d = (e as CustomEvent<TaskMenuEvent>).detail
@@ -37,6 +39,9 @@ export function TaskMenu({ pageId }: { pageId: string }) {
     setEv(null)
   }
   const status = ev.attrs.status as string | null
+  const current = editor ? sectionAt(editor.state.doc, ev.pos + 1) : null
+  const sections = (page?.sections ?? []).filter((x) => x.id !== current)
+  const topLevel = editor ? editor.state.doc.resolve(ev.pos).parent.type.name === 'taskList' && editor.state.doc.resolve(ev.pos).node(-1)?.type.name !== 'taskItem' : false
   return (
     <DropdownMenu.Root open onOpenChange={(o) => !o && setEv(null)}>
       <DropdownMenu.Trigger asChild>
@@ -57,6 +62,22 @@ export function TaskMenu({ pageId }: { pageId: string }) {
                 <MenuItem icon={<Sun />} onSelect={() => run(() => moveTaskToDay(editor!, ev.pos, today))}>
                   Move to today
                 </MenuItem>
+              )}
+              {topLevel && status !== 'moved' && (sections.length > 0 || current) && (
+                <>
+                  <MenuLabel>Move to section</MenuLabel>
+                  {sections.map((x) => (
+                    <MenuItem key={x.id} icon={<span className="text-[14px] leading-none">{x.icon || <CornerDownRight />}</span>} onSelect={() => run(() => moveTaskToSection(editor!, ev.pos, x.id, page!))}>
+                      {x.name}
+                    </MenuItem>
+                  ))}
+                  {current && (
+                    <MenuItem icon={<CornerDownRight />} onSelect={() => run(() => moveTaskToSection(editor!, ev.pos, null, page!))}>
+                      No section
+                    </MenuItem>
+                  )}
+                  <MenuSeparator />
+                </>
               )}
               {!ev.attrs.checked && status !== 'dropped' && (
                 <>

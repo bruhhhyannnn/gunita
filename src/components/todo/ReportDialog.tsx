@@ -11,6 +11,7 @@ import { Button } from '../ui/button'
 import { Select } from '../ui/select'
 import { Switch } from '../ui/switch'
 import { CheckboxField } from '../ui/checkbox'
+import { SECTIONS_EVENT } from '#/todo/todoSection'
 import { Input, Textarea } from '../ui/input'
 import { DatePicker } from '../ui/date-picker'
 import { toast } from '../ui/toast'
@@ -62,6 +63,7 @@ export function ReportDialog({ page, open, onOpenChange }: { page: PageMeta; edi
     { value: 'custom', label: 'Custom dates…' },
   ]
 
+  const reportSections = (page.sections ?? []).filter((x) => x.report)
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Accomplishment report" description="Turns the tasks you checked off into your work accomplishment report, as a page you can edit and copy into Google Docs.">
       <div className="space-y-5 px-5 py-4">
@@ -71,6 +73,24 @@ export function ReportDialog({ page, open, onOpenChange }: { page: PageMeta; edi
             <div className="mt-0.5 text-xs text-muted">The draft appears under “Accomplishment reports” in this list. Regenerate it before sending to include the last day's work.</div>
           </div>
           <Switch aria-label="Draft automatically" checked={settings.auto} onCheckedChange={(v) => set({ auto: v })} />
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-2 text-sm" data-testid="report-sections">
+          <span className="text-muted">
+            {reportSections.length
+              ? <>Counts tasks in {reportSections.map((x) => `${x.icon} ${x.name}`.trim()).join(', ')} only.</>
+              : 'Counts every finished task. Add a Work section to keep personal tasks out.'}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onOpenChange(false)
+              window.dispatchEvent(new CustomEvent(SECTIONS_EVENT, { detail: { pageId: page.id } }))
+            }}
+          >
+            {reportSections.length ? 'Edit sections' : 'Set up sections'}
+          </Button>
         </div>
 
         <div className="space-y-2">

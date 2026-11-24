@@ -18,9 +18,9 @@ export function TemplateDialog({ page, open, onOpenChange }: { page: PageMeta; o
       open={open}
       onOpenChange={onOpenChange}
       title="Daily template"
-      description="Added each time you start a day. Type like a normal list: Enter for a new task, Tab / Shift+Tab to indent, drag the handle or press Ctrl+Shift+↑/↓ to reorder. Click a task's chip to choose which days it repeats."
+      description="Added each time you start a day. Type like a normal list: Enter for a new task, Tab / Shift+Tab to indent, drag the handle or press Ctrl+Shift+↑/↓ to reorder. Click a task's chips to choose which days it repeats and which section it goes in."
     >
-      <div className="max-h-[52vh] overflow-y-auto px-5 py-3">{open && <TemplateEditor ref={editor} initial={page.template ?? []} />}</div>
+      <div className="max-h-[52vh] overflow-y-auto px-5 py-3">{open && <TemplateEditor ref={editor} initial={page.template ?? []} sections={page.sections} />}</div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-3">
         <CheckboxField
           label="Start the day automatically when I open this list"

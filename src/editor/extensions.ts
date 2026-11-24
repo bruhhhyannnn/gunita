@@ -17,7 +17,9 @@ import { GunitaTaskItem } from './taskItem'
 import { Mentions, SlashCommands, type EditorContext } from './commands'
 import { ImageUploads } from './uploads'
 import { TodoDay } from '#/todo/todoDay'
+import { TodoSection } from '#/todo/todoSection'
 import { MoveBlock } from './moveBlock'
+import { WordNav } from './wordNav'
 
 const lowlight = createLowlight(common)
 
@@ -56,10 +58,12 @@ export function buildExtensions(opts: { doc: Y.Doc; ctx: EditorContext; extra?: 
     PageEmbed,
     DatabaseEmbed,
     TodoDay,
+    TodoSection.configure({ pageId: opts.ctx.pageId }),
     SlashCommands.configure({ ctx: opts.ctx }),
     Mentions.configure({ ctx: opts.ctx }),
     ImageUploads,
     MoveBlock,
+    WordNav,
     ...(opts.extra ?? []),
   ]
 }

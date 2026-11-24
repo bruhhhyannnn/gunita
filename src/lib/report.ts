@@ -3,6 +3,7 @@ import { getApp } from './app'
 import { isoDate, parseIso, addDays } from './dates'
 import { writePageDoc } from './editorSchema'
 import type { PageMeta, ReportSettings } from './types'
+import type { IndexedTask } from './pageIndex'
 import { postJson } from '#/ai/client'
 
 export const DEFAULT_REPORT: ReportSettings = {
@@ -79,16 +80,31 @@ export interface DoneItem {
 }
 
 /** Checked tasks in the period, with the task they're nested under (their project). */
+/**
+ * Which tasks count for the report. If the list has sections marked "In report"
+ * (like 💼 Work), only tasks in them count. Days from before you added
+ * sections have none, so all their tasks count.
+ */
+export function reportFilter(listId: string): (t: IndexedTask) => boolean {
+  const { ws, index } = getApp()
+  const report = new Set((ws.page(listId)?.sections ?? []).filter((x) => x.report).map((x) => x.id))
+  if (!report.size) return () => true
+  const split = new Set(index.get(listId)?.sectionDays ?? [])
+  return (t) => !t.day || !split.has(t.day) || (!!t.section && report.has(t.section))
+}
+
 export async function collectDone(listId: string, period: Period, skipRoutine: boolean): Promise<DoneItem[]> {
   const { index } = getApp()
   await index.reindex(listId)
   const tasks = index.get(listId)?.tasks ?? []
+  const counts = reportFilter(listId)
   const out: DoneItem[] = []
   const stack: string[] = []
   for (const t of tasks) {
     stack.length = Math.min(stack.length, t.depth)
     stack[t.depth] = t.text
     if (!t.day || t.day < period.from || t.day > period.to) continue
+    if (!counts(t)) continue
     if (!t.checked || t.status === 'moved' || !t.text.trim()) continue
     const routine = !!t.templateId
     if (routine && skipRoutine) continue
@@ -101,7 +117,8 @@ export async function collectDone(listId: string, period: Period, skipRoutine: b
 export function absences(listId: string, period: Period): string {
   const { index } = getApp()
   const tasks = index.get(listId)?.tasks ?? []
-  const worked = new Set(tasks.filter((t) => t.checked && t.day).map((t) => t.day!))
+  const counts = reportFilter(listId)
+  const worked = new Set(tasks.filter((t) => t.checked && t.day && counts(t)).map((t) => t.day!))
   const last = period.to < isoDate() ? period.to : isoDate()
   // Don't count days before you started using this list.
   const firstDay = [...(index.get(listId)?.days ?? [])].filter((d) => /^\d{4}-/.test(d)).sort()[0]

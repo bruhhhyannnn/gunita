@@ -66,3 +66,24 @@ test('quick capture sends tasks to the inbox, then to today', async ({ page }) =
   await expect(today).toContainText('buy printer ink')
   await expect(page.getByText('2 tasks waiting')).toBeHidden()
 })
+
+test('Ctrl+→ to the end of a task keeps the caret in the text', async ({ page }) => {
+  await login(page, 'wordnav')
+  await createTodoList(page)
+  await cursorAtEnd(page, 'add things on CWA')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('the quick fox jumps')
+  await page.keyboard.press('Control+ArrowLeft')
+  await page.keyboard.press('Control+ArrowLeft')
+  await page.keyboard.type('brown ')
+  // Word jumps differ by OS (Linux stops at word ends, Windows at word starts),
+  // so jump until the caret reaches the end of the line.
+  const atEnd = () => page.evaluate(() => {
+    const s = window.getSelection()!
+    return s.anchorNode?.nodeType === Node.TEXT_NODE && s.anchorOffset === s.anchorNode.textContent?.length && s.anchorNode.textContent?.endsWith('jumps')
+  })
+  for (let i = 0; i < 4 && !(await atEnd()); i++) await page.keyboard.press('Control+ArrowRight')
+  expect(await atEnd()).toBe(true)
+  await page.keyboard.type(' high')
+  expect(await dayTasks(page)).toContain('open|the quick brown fox jumps high')
+})
