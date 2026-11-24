@@ -35,7 +35,7 @@ export interface CarryPlan {
 function isOpen(item: PMNode, today: string) {
   if (item.attrs.checked) return false
   const s = item.attrs.status as string | null
-  if (s === 'moved' || s === 'dropped' || s === 'someday') return false
+  if (s === 'moved' || s === 'dropped' || s === 'someday' || s === 'archived') return false
   if (s === 'snoozed' && item.attrs.snoozeUntil && String(item.attrs.snoozeUntil) > today) return false
   return true
 }
@@ -79,6 +79,7 @@ export function planToday(editor: Editor, page: PageMeta): CarryPlan {
       taskId = newId()
     }
     seenTaskIds.set(taskId, text)
+    const markIndex = marks.length
     marks.push({ pos, attrs: { ...item.attrs, taskId, status: 'moved', movedTo: today, snoozeUntil: null } })
     const content: JSONContent[] = []
     item.forEach((child, off) => {
@@ -93,6 +94,12 @@ export function planToday(editor: Editor, page: PageMeta): CarryPlan {
         content.push(child.toJSON())
       }
     })
+    // An empty task (a leftover blank checkbox) with nothing open under it isn't worth carrying.
+    if (!text && !content.some((c) => c.type === 'taskList')) {
+      marks.splice(markIndex, 1)
+      seenTaskIds.delete(taskId)
+      return null
+    }
     return {
       type: 'taskItem',
       attrs: {

@@ -10,6 +10,7 @@ import { Switch } from '#/components/ui/switch'
 import { Input } from '#/components/ui/input'
 import { Button } from '#/components/ui/button'
 import { useDocumentTitle } from '#/lib/title'
+import { NotionImport } from '#/components/NotionImport'
 import { DESKTOP_HOTKEY, isDesktop } from '#/lib/desktop'
 
 export const Route = createFileRoute('/_app/settings')({ component: SettingsPage })
@@ -130,6 +131,9 @@ function SettingsPage() {
         )}
 
         <h2 className="mt-10 text-sm font-semibold text-muted">Your data</h2>
+        <Row title="Import from Notion" desc="In Notion: Settings → Export → “Markdown & CSV”, include sub-pages. Then choose the zip here.">
+          <NotionImport />
+        </Row>
         <Row title="Export everything" desc="All pages as Markdown, databases as CSV, in a zip file.">
           <Button icon={<Download />} onClick={() => void exportAll()}>
             Export

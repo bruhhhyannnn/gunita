@@ -15,7 +15,7 @@ function countTasks(node: ReactNodeViewProps['node']) {
   node.descendants((n) => {
     if (n.type.name === 'taskItem') {
       const s = n.attrs.status as string | null
-      if (s === 'moved' || s === 'dropped') return true
+      if (s === 'moved' || s === 'dropped' || s === 'archived') return true
       total++
       if (n.attrs.checked) done++
     }

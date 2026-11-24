@@ -49,6 +49,7 @@ function build(doc: PMNode, pageId: string): DecorationSet {
           const widgets: HTMLElement[] = []
           if (status === 'moved' && a.movedTo) widgets.push(note(`→ moved to ${shortDate(a.movedTo as string)}`, 'n-moved'))
           else if (status === 'dropped') widgets.push(note('dropped', 'n-dropped'))
+          else if (status === 'archived') widgets.push(note('not carried over', 'n-dropped'))
           else if (status === 'snoozed' && a.snoozeUntil) widgets.push(note(`snoozed until ${shortDate(a.snoozeUntil as string)}`, 'n-snoozed'))
           else if (!a.checked && Number(a.carry) > 0) {
             const since = (a.since as string) || null

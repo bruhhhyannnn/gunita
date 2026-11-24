@@ -48,9 +48,9 @@ export function TaskMenu({ pageId }: { pageId: string }) {
             <Calendar min={addDays(today, 1)} onChange={(d) => run(() => snoozeTask(editor!, ev.pos, d))} />
           ) : (
             <>
-              {(status === 'dropped' || status === 'snoozed') && (
+              {(status === 'dropped' || status === 'snoozed' || status === 'archived') && (
                 <MenuItem icon={<RotateCcw />} onSelect={() => run(() => restoreTask(editor!, ev.pos))}>
-                  {status === 'dropped' ? 'Restore task' : 'Un-snooze'}
+                  {status === 'snoozed' ? 'Un-snooze' : status === 'archived' ? 'Carry over again' : 'Restore task'}
                 </MenuItem>
               )}
               {ev.day !== today && !ev.attrs.checked && (

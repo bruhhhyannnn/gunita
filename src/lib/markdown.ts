@@ -75,6 +75,7 @@ export function docToMarkdown(doc: Y.Doc, titleOf: (id: string) => string = () =
               const status = item.getAttribute('status') as string | undefined
               if (status === 'moved') line = `~~${line}~~ (→ moved to ${item.getAttribute('movedTo')})`
               else if (status === 'dropped') line = `~~${line}~~ (dropped)`
+              else if (status === 'archived') line += ' (not carried over)'
               else if (status === 'snoozed') line += ` (snoozed until ${item.getAttribute('snoozeUntil')})`
               lines.push(indent + prefix + line)
             } else lines.push(...block(p, indent + '  '))

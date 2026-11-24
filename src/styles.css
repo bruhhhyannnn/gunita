@@ -499,7 +499,9 @@ button {
   opacity: 0.35;
   pointer-events: none;
 }
-.gunita-editor li.task-snoozed > div > p { color: var(--text-faint); }
+.gunita-editor li.task-snoozed > div > p,
+.gunita-editor li.task-archived > div > p { color: var(--text-faint); }
+.gunita-editor li.task-archived > label { opacity: 0.5; }
 .todo-day { scroll-margin-top: 56px; }
 
 /* ---------- Template editor ---------- */
