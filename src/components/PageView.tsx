@@ -367,7 +367,8 @@ function Header({ page }: { page: PageMeta }) {
             ed?.focus()
           }
         }}
-        className="mb-2 mt-1 block w-full resize-none overflow-hidden bg-transparent text-[40px] font-bold leading-tight outline-none placeholder:text-faint/60"
+        style={{ fontSize: 'calc(var(--content-size, 16px) * 2.5)' }}
+        className="mb-2 mt-1 block w-full resize-none overflow-hidden bg-transparent font-bold leading-tight outline-none placeholder:text-faint/60"
       />
     </div>
   )

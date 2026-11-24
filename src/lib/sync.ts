@@ -13,17 +13,26 @@ interface SyncState {
 }
 
 const BATCH = 20
+/** Push this long after you stop typing… */
+const PUSH_IDLE = 2_000
+/** …but at least this often while you keep typing, so other devices stay close. */
+const PUSH_MAX_WAIT = 10_000
 
 /**
  * Pushes local Yjs changes to /api/sync and pulls changes made on other devices.
  * Works offline: edits are stored in IndexedDB and the list of unsynced docs is
- * persisted, so nothing is lost between reloads.
+ * persisted, so nothing is lost between reloads. Pushes are debounced (see
+ * scheduleEdit) and flushed right away when you leave the tab.
  */
 export class SyncEngine {
   private kv: ReturnType<typeof createStore>
   private dirty = new Set<string>()
   private pull = new Set<string>()
   private edits = new Map<string, number>()
+  /** Highest server row this tab has applied, per doc (kept in memory: each tab's copy differs). */
+  private seqs = new Map<string, number>()
+  /** When the first edit not yet pushed was made. */
+  private firstEditAt = 0
   private running = false
   private again = false
   private timer: ReturnType<typeof setTimeout> | null = null
@@ -49,10 +58,13 @@ export class SyncEngine {
 
     docs.onUpdate((docId, origin) => {
       if (origin === SYNC_ORIGIN) return
-      this.dirty.add(docId)
       this.edits.set(docId, (this.edits.get(docId) ?? 0) + 1)
-      void this.persistSets()
-      this.schedule(1500)
+      // The edit itself is already saved on this device (IndexedDB); only note new docs.
+      if (!this.dirty.has(docId)) {
+        this.dirty.add(docId)
+        void this.persistSets()
+      }
+      this.scheduleEdit()
     })
   }
 
@@ -94,6 +106,22 @@ export class SyncEngine {
   }
 
   private dueAt = 0
+
+  /**
+   * Debounced push for edits: 2 s after typing stops, or every 10 s while it
+   * goes on. Keeps requests (and database writes) low while typing.
+   */
+  private scheduleEdit() {
+    const now = Date.now()
+    if (!this.firstEditAt) this.firstEditAt = now
+    const due = Math.min(now + PUSH_IDLE, this.firstEditAt + PUSH_MAX_WAIT)
+    if (this.timer) clearTimeout(this.timer)
+    this.dueAt = due
+    this.timer = setTimeout(() => {
+      this.timer = null
+      void this.run()
+    }, Math.max(0, due - now))
+  }
 
   /** Runs a sync in `ms`, unless one is already due sooner (so constant typing can't starve it). */
   schedule(ms: number) {
@@ -137,9 +165,10 @@ export class SyncEngine {
       return
     }
     this.running = true
+    this.firstEditAt = 0
     this.update({ status: 'syncing' })
     try {
-      let cursor = Number(localStorage.getItem(this.cursorKey()) || 0)
+      let cursor = await this.readCursor()
       let first = true
       while (first || this.dirty.size || this.pull.size) {
         first = false
@@ -154,8 +183,10 @@ export class SyncEngine {
             this.docs.withDoc(id, async (doc) => {
               const serverSv = await get<Uint8Array>(this.svKey(id), this.kv)
               const sv = Y.encodeStateVector(doc)
-              const entry: { id: string; sv: string; update?: string } = { id, sv: toB64(sv) }
+              const entry: { id: string; sv: string; update?: string; seq?: number } = { id, sv: toB64(sv) }
               if (this.dirty.has(id)) entry.update = toB64(Y.encodeStateAsUpdate(doc, serverSv))
+              // Lets the server skip re-reading the doc when nothing else changed it.
+              if (this.seqs.has(id)) entry.seq = this.seqs.get(id)
               return entry
             }),
           ),
@@ -172,7 +203,7 @@ export class SyncEngine {
         }
         if (!res.ok) throw new Error(`Sync failed (${res.status})`)
         const data = (await res.json()) as {
-          docs: { id: string; update?: string; sv: string }[]
+          docs: { id: string; update?: string; sv: string; seq?: number }[]
           changed: string[]
           cursor: number
         }
@@ -183,13 +214,14 @@ export class SyncEngine {
             remoteChanged.push(d.id)
           }
           await set(this.svKey(d.id), fromB64(d.sv), this.kv)
+          if (typeof d.seq === 'number') this.seqs.set(d.id, d.seq)
           if ((this.edits.get(d.id) ?? 0) === editMarks.get(d.id)) this.dirty.delete(d.id)
           this.pull.delete(d.id)
         }
         const inBatch = new Set(batch)
         for (const id of data.changed) if (!inBatch.has(id)) this.pull.add(id)
         cursor = data.cursor
-        localStorage.setItem(this.cursorKey(), String(cursor))
+        await set('cursor', cursor, this.kv)
         await this.persistSets()
         if (remoteChanged.length) this.onRemoteChange?.(remoteChanged)
       }
@@ -205,7 +237,18 @@ export class SyncEngine {
     }
   }
 
-  private cursorKey() {
-    return `gunita:cursor:${this.docs.userId}`
+  /**
+   * How far this device has read the server's changes. Kept in IndexedDB with
+   * the notes, so clearing one clears the other (an old position with no notes
+   * would mean never downloading them).
+   */
+  private async readCursor(): Promise<number> {
+    const stored = await get<number>('cursor', this.kv)
+    if (typeof stored === 'number') return stored
+    // Older versions kept it in localStorage.
+    const legacy = `gunita:cursor:${this.docs.userId}`
+    const old = Number(localStorage.getItem(legacy) || 0)
+    localStorage.removeItem(legacy)
+    return old
   }
 }

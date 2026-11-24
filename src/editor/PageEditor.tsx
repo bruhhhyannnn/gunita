@@ -1,15 +1,61 @@
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
+import type { NestedOptions } from '@tiptap/extension-drag-handle'
 import type { AnyExtension } from '@tiptap/core'
 import type * as Y from 'yjs'
 import { Bold, ChevronDown, Code, GripVertical, Highlighter, Italic, Link2, Strikethrough, Underline } from 'lucide-react'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useApp } from '#/lib/app'
 import { cn } from '#/components/ui/cn'
 import { buildExtensions } from './extensions'
 import { yUndoPluginKey } from '@tiptap/y-tiptap'
 import { trackUndo } from '#/lib/undo'
+
+/**
+ * Where the drag handle goes for nested blocks. The handle sits to the left of
+ * a block, so on the way to it the mouse passes the block's left edge; by
+ * default that hands the handle to the parent (the whole TODO day, or the
+ * parent task) and it jumps away just before you reach it. So: no edge
+ * switching, and days and sections are never drag targets (they keep their
+ * own order).
+ */
+export const NESTED_HANDLE: NestedOptions = {
+  edgeDetection: 'none',
+  rules: [{ id: 'notDaysOrSections', evaluate: ({ node }) => (node.type.name === 'todoDay' || node.type.name === 'todoSection' ? 1000 : 0) }],
+}
+
+/**
+ * Keeps the drag handle on its block while the mouse travels to it. The
+ * handle sits left of the block, so the way there crosses the gutter (and a
+ * task's checkbox), which the editor reads as the parent block. While the
+ * mouse is in that gutter, level with the block's own line, the editor
+ * doesn't get the move, so the handle stays put.
+ */
+export function useHandleHold(editor: Editor | null) {
+  const pos = useRef(-1)
+  const [el, setEl] = useState<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (!el || !editor) return
+    const onMove = (e: MouseEvent) => {
+      if (e.buttons || pos.current < 0 || editor.isDestroyed) return
+      const dom = editor.view.nodeDOM(pos.current) as HTMLElement | null
+      if (!dom?.isConnected || dom.nodeType !== 1) return
+      const own = dom.querySelector<HTMLElement>(':scope > div > p, :scope > p') ?? dom
+      const box = dom.getBoundingClientRect()
+      const text = own.getBoundingClientRect()
+      if (e.clientY >= box.top && e.clientY <= Math.max(text.bottom, box.top + 24) && e.clientX < text.left) e.stopPropagation()
+    }
+    el.addEventListener('mousemove', onMove, { capture: true })
+    return () => el.removeEventListener('mousemove', onMove, { capture: true })
+  }, [el, editor])
+  return {
+    ref: setEl,
+    onNodeChange: ({ pos: p }: { pos: number }) => {
+      pos.current = p
+    },
+  }
+}
 
 /** Live editors by page id, so page-level actions (Start Today, AI) can edit the open document. */
 export const editors = new Map<string, Editor>()
@@ -82,11 +128,12 @@ function EditorInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, pageId])
 
+  const handleWrap = useHandleHold(editor)
   if (!editor) return null
   return (
-    <div className="relative">
+    <div className="relative" ref={handleWrap.ref}>
       <EditorContent editor={editor} />
-      <DragHandle editor={editor} nested>
+      <DragHandle editor={editor} className="drag-handle-wrap" nested={NESTED_HANDLE} onNodeChange={handleWrap.onNodeChange}>
         <div className="drag-handle mr-1" title="Drag to move">
           <GripVertical className="h-4 w-4" />
         </div>

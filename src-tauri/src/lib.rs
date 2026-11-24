@@ -3,11 +3,13 @@
 //! The app shows the live Gunita website in its own window (so it updates with
 //! every deploy and keeps working offline through the site's service worker) and
 //! adds what a browser tab can't: a tray icon, a global quick-capture hotkey,
-//! start with Windows, and Google sign-in through your normal browser.
+//! opening when Windows starts (on by default), and Google sign-in through your
+//! normal browser.
 //!
 //! The website gets no native commands. The app talks to it only by dispatching
 //! DOM events (`gunita:capture`, `gunita:navigate`), see `src/lib/desktop.ts`.
 
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
@@ -163,12 +165,54 @@ fn handle_deep_link(app: &AppHandle, url: &Url) {
     }
 }
 
+// ---------- Desktop preferences (a small JSON file next to the app's settings) ----------
+
+/// The command-line flag Windows starts Gunita with at login.
+const AT_LOGIN: &str = "--autostart";
+
+fn prefs_path(app: &AppHandle) -> Option<PathBuf> {
+    app.path().app_config_dir().ok().map(|d| d.join("desktop.json"))
+}
+
+fn load_prefs(app: &AppHandle) -> serde_json::Value {
+    prefs_path(app)
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_else(|| serde_json::json!({}))
+}
+
+fn pref(app: &AppHandle, key: &str) -> bool {
+    load_prefs(app).get(key).and_then(|v| v.as_bool()).unwrap_or(false)
+}
+
+fn set_pref(app: &AppHandle, key: &str, value: bool) {
+    let Some(path) = prefs_path(app) else { return };
+    let mut prefs = load_prefs(app);
+    prefs[key] = serde_json::Value::Bool(value);
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let _ = std::fs::write(path, prefs.to_string());
+}
+
+/// The first time this version runs, turn on "Start with Windows" (you can
+/// turn it off from the tray; that choice is kept).
+fn set_up_autostart(app: &AppHandle) {
+    if pref(app, "autostartSetUp") {
+        return;
+    }
+    let _ = app.autolaunch().enable();
+    set_pref(app, "autostartSetUp", true);
+}
+
 fn build_tray(app: &tauri::App) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Open Gunita", true, None::<&str>)?;
     let capture = MenuItem::with_id(app, "capture", "Quick capture (Ctrl+Shift+Space)", true, None::<&str>)?;
     let today = MenuItem::with_id(app, "today", "Start today", true, None::<&str>)?;
     let autostart_on = app.autolaunch().is_enabled().unwrap_or(false);
     let autostart = CheckMenuItem::with_id(app, "autostart", "Start with Windows", true, autostart_on, None::<&str>)?;
+    let in_tray = pref(app.handle(), "startInTray");
+    let tray_start = CheckMenuItem::with_id(app, "trayStart", "Start in the tray (no window)", autostart_on, in_tray, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Gunita", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
@@ -178,6 +222,7 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
             &today,
             &PredefinedMenuItem::separator(app)?,
             &autostart,
+            &tray_start,
             &PredefinedMenuItem::separator(app)?,
             &quit,
         ],
@@ -195,7 +240,14 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
                 let launcher = app.autolaunch();
                 let enabled = launcher.is_enabled().unwrap_or(false);
                 let _ = if enabled { launcher.disable() } else { launcher.enable() };
-                let _ = autostart.set_checked(launcher.is_enabled().unwrap_or(!enabled));
+                let now = launcher.is_enabled().unwrap_or(!enabled);
+                let _ = autostart.set_checked(now);
+                let _ = tray_start.set_enabled(now);
+            }
+            "trayStart" => {
+                let next = !pref(app, "startInTray");
+                set_pref(app, "startInTray", next);
+                let _ = tray_start.set_checked(next);
             }
             "quit" => {
                 let _ = app.save_window_state(StateFlags::all());
@@ -222,7 +274,7 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| show_main(app)))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec!["--hidden"])))
+        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec![AT_LOGIN])))
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 // Remember size and position, but let --hidden decide visibility.
@@ -231,7 +283,11 @@ pub fn run() {
         )
         .manage(SignIn::default())
         .setup(|app| {
-            let hidden = std::env::args().any(|a| a == "--hidden");
+            set_up_autostart(app.handle());
+            // Started by Windows at login ("--hidden" is what older versions registered):
+            // open the window, unless you chose "Start in the tray".
+            let at_login = std::env::args().any(|a| a == AT_LOGIN || a == "--hidden");
+            let hidden = at_login && pref(app.handle(), "startInTray");
             let origin = app_url();
             let handle = app.handle().clone();
 

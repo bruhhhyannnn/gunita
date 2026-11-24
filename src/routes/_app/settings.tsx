@@ -12,6 +12,8 @@ import { Button } from '#/components/ui/button'
 import { useDocumentTitle } from '#/lib/title'
 import { NotionImport } from '#/components/NotionImport'
 import { DESKTOP_HOTKEY, isDesktop } from '#/lib/desktop'
+import { DEFAULT_SIZE, SIZES, setTextSize, useTextSize } from '#/lib/textSize'
+import { Slider } from '#/components/ui/slider'
 
 export const Route = createFileRoute('/_app/settings')({ component: SettingsPage })
 
@@ -66,6 +68,7 @@ function SettingsPage() {
             ]}
           />
         </Row>
+        <TextSizeRow />
 
         <h2 className="mt-10 text-sm font-semibold text-muted">AI</h2>
         {config && !config.claudeConfigured && (
@@ -124,7 +127,10 @@ function SettingsPage() {
             <Row title="Quick capture" desc="Works from any app, even when Gunita is in the tray.">
               <kbd className="rounded border border-line px-2 py-1 text-xs">{DESKTOP_HOTKEY}</kbd>
             </Row>
-            <Row title="Start with Windows and tray" desc="Right-click the Gunita icon in the system tray to change these. Closing the window keeps Gunita in the tray.">
+            <Row
+              title="Opens when Windows starts"
+              desc="On by default. Right-click the Gunita icon in the system tray to turn off “Start with Windows”, or pick “Start in the tray” to start quietly without a window. Closing the window keeps Gunita in the tray."
+            >
               <span />
             </Row>
           </>
@@ -141,5 +147,26 @@ function SettingsPage() {
         </Row>
       </div>
     </div>
+  )
+}
+
+/** Page text size for this device; Ctrl/⌘ + and − do the same from anywhere. */
+function TextSizeRow() {
+  const size = useTextSize()
+  const index = SIZES.indexOf(size)
+  return (
+    <Row title="Text size" desc="How big page text is on this device. Ctrl + and Ctrl − change it anywhere, Ctrl 0 resets it.">
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-faint">A</span>
+        <Slider aria-label="Text size" min={0} max={SIZES.length - 1} step={1} value={index} onValueChange={(i) => setTextSize(SIZES[i])} className="w-40" />
+        <span className="text-lg text-faint">A</span>
+        <span className="w-10 text-right text-sm tabular-nums" data-testid="text-size">
+          {size}px
+        </span>
+        <Button variant="ghost" size="sm" disabled={size === DEFAULT_SIZE} onClick={() => setTextSize(DEFAULT_SIZE)}>
+          Reset
+        </Button>
+      </div>
+    </Row>
   )
 }

@@ -9,6 +9,7 @@ import { TabBar } from '#/components/TabBar'
 import { CommandPalette } from '#/components/CommandPalette'
 import { Toaster, toast } from '#/components/ui/toast'
 import { runUndo } from '#/lib/undo'
+import { DEFAULT_SIZE, setTextSize, stepTextSize } from '#/lib/textSize'
 import { startFocusEngine } from '#/lib/focus'
 import { FocusPill } from '#/components/focus/FocusMini'
 import { config } from '#/config'
@@ -90,6 +91,13 @@ function Shell() {
       } else if (mod && e.key.toLowerCase() === 'j') {
         e.preventDefault()
         setUi((s) => ({ askOpen: !s.askOpen }))
+      } else if (mod && !e.altKey && (e.key === '=' || e.key === '+' || e.key === '-' || e.key === '_' || e.key === '0' || e.code === 'NumpadAdd' || e.code === 'NumpadSubtract' || e.code === 'Numpad0')) {
+        // Ctrl/⌘ + and − change the page text size instead of zooming the whole browser.
+        e.preventDefault()
+        const reset = e.key === '0' || e.code === 'Numpad0'
+        const bigger = e.key === '=' || e.key === '+' || e.code === 'NumpadAdd'
+        const px = reset ? (setTextSize(DEFAULT_SIZE), DEFAULT_SIZE) : stepTextSize(bigger ? 1 : -1)
+        toast(`Text size ${px}px${px === DEFAULT_SIZE ? ' (default)' : ' · Ctrl+0 to reset'}`, undefined, 1800)
       } else if (mod && !e.altKey && (e.key.toLowerCase() === 'z' || (e.key.toLowerCase() === 'y' && !e.shiftKey))) {
         // Undo/redo outside the editor (the editor handles its own keys).
         const t = e.target as HTMLElement | null

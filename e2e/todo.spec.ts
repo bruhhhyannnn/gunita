@@ -87,3 +87,33 @@ test('Ctrl+→ to the end of a task keeps the caret in the text', async ({ page 
   await page.keyboard.type(' high')
   expect(await dayTasks(page)).toContain('open|the quick brown fox jumps high')
 })
+
+test('the drag handle stays on a task while the mouse moves to it', async ({ page }) => {
+  await login(page, 'handle')
+  await createTodoList(page)
+  await cursorAtEnd(page, 'add things on CWA')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('parent task')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('child task')
+  await page.waitForTimeout(1500) // let "Suggested for today" settle so nothing moves
+
+  for (const scope of ['.todo-day.is-today li li', '.todo-day.is-today li']) {
+    const item = page.locator(scope).filter({ hasText: scope.includes('li li') ? 'child task' : 'check new potential' }).first()
+    const text = (await item.locator('p').first().boundingBox())!
+    await page.mouse.move(text.x + 40, text.y + text.height / 2)
+    const handle = page.locator('.drag-handle').filter({ visible: true })
+    await expect(handle).toBeVisible()
+    const start = (await handle.boundingBox())!
+    // Walk left across the checkbox to the handle.
+    for (let i = 1; i <= 15; i++) {
+      await page.mouse.move(text.x + 40 + (start.x + start.width / 2 - text.x - 40) * (i / 15), start.y + start.height / 2)
+    }
+    await page.waitForTimeout(200)
+    const end = (await handle.boundingBox())!
+    const li = (await item.boundingBox())!
+    expect(Math.abs(end.y - li.y), `handle stays on ${scope}`).toBeLessThan(8)
+    expect(end.x).toBeCloseTo(start.x, 0)
+  }
+})

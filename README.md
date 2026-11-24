@@ -136,7 +136,8 @@ You need a Cloudflare account. The free plan is enough to start.
 
 `src-tauri/` holds a small [Tauri](https://tauri.app) app. It opens the live site in its own window, so it updates whenever you deploy, works offline, and doesn't count toward your browser's tab limit. On top of the website it adds:
 
-- a tray icon (Open, Quick capture, Start today, Start with Windows, Quit)
+- opens when Windows starts (on by default; turn it off, or have it start in the tray without a window, from the tray icon)
+- a tray icon (Open, Quick capture, Start today, Start with Windows, Start in the tray, Quit)
 - **Ctrl+Shift+Space** for Quick capture from any app
 - close-to-tray, so the hotkey keeps working
 - remembered window size and position

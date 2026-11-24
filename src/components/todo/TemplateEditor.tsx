@@ -12,6 +12,7 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { newId } from '#/lib/ids'
 import type { Recurrence, TemplateItem, TodoSectionDef } from '#/lib/types'
 import { MoveBlock } from '#/editor/moveBlock'
+import { useHandleHold } from '#/editor/PageEditor'
 import { Popover, PopoverAnchor, PopoverContent } from '../ui/popover'
 import { cn } from '../ui/cn'
 import { Input } from '../ui/input'
@@ -211,9 +212,11 @@ export const TemplateEditor = forwardRef<TemplateEditorHandle, { initial: Templa
   )
   useImperativeHandle(ref, () => ({ getItems: () => (editor ? fromJson(editor.getJSON()) : initial) }), [editor, initial])
 
+  const hold = useHandleHold(editor)
   if (!editor) return null
   return (
     <div
+      ref={hold.ref}
       className="relative pl-6"
       // Tab / Shift+Tab indent tasks here; don't let the dialog use them to move focus away.
       onKeyDown={(e) => {
@@ -224,7 +227,7 @@ export const TemplateEditor = forwardRef<TemplateEditorHandle, { initial: Templa
       }}
     >
       <EditorContent editor={editor} />
-      <DragHandle editor={editor} nested>
+      <DragHandle editor={editor} className="drag-handle-wrap" nested={{ edgeDetection: 'none' }} onNodeChange={hold.onNodeChange}>
         <div className="drag-handle mr-1" title="Drag to reorder (or Ctrl+Shift+↑/↓)">
           <GripVertical className="h-4 w-4" />
         </div>
