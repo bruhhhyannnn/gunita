@@ -93,6 +93,17 @@ export function ReportDialog({ page, open, onOpenChange }: { page: PageMeta; edi
           </Button>
         </div>
 
+        <div className="space-y-1.5">
+          <div className="text-xs font-medium text-muted">Your position</div>
+          <Input
+            value={settings.position ?? ''}
+            onChange={(e) => set({ position: e.target.value })}
+            placeholder="e.g. Administrative Aide IV"
+            aria-label="Your position"
+          />
+          <p className="text-xs text-faint">Goes into the intro: “…my contract of services as <em>{settings.position?.trim() || 'your position'}</em> for the period…”</p>
+        </div>
+
         <div className="space-y-2">
           <div className="text-xs font-medium text-muted">Period</div>
           <Select className="w-full" aria-label="Period" value={choice} onValueChange={(v) => setChoice(v as Choice)} options={options} />
@@ -135,7 +146,7 @@ export function ReportDialog({ page, open, onOpenChange }: { page: PageMeta; edi
               <Input value={settings.heading} onChange={(e) => set({ heading: e.target.value })} aria-label="Heading" />
               <Textarea value={settings.intro} onChange={(e) => set({ intro: e.target.value })} className="h-24" aria-label="Intro" />
               <p className="text-xs text-faint">
-                <code>{'{period}'}</code> becomes “{due.label}” (in bold). <code>{'{absences}'}</code> becomes the weekdays with no finished tasks, or “N/A”.
+                <code>{'{position}'}</code> becomes your position. <code>{'{period}'}</code> becomes “{due.label}” (in bold). <code>{'{absences}'}</code> becomes the weekdays with no finished tasks, or “N/A”.
               </p>
             </div>
           )}

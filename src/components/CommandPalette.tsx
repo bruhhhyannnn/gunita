@@ -1,7 +1,7 @@
 import { Command } from 'cmdk'
 import { Dialog as D } from 'radix-ui'
 import { useNavigate } from '@tanstack/react-router'
-import { Brain, CalendarClock, CheckSquare, FileText, Moon, Settings, Sparkles, Sun, Table2, Timer } from 'lucide-react'
+import { Brain, CalendarClock, CheckSquare, FileText, Moon, Settings, Sparkles, Sun, Table2, Timer, Keyboard } from 'lucide-react'
 import { focusSettings, getRun, startFocus } from '#/lib/focus'
 import { useMemo, useState, type ReactNode } from 'react'
 import { getApp, useApp, useIndexVersion, useWs } from '#/lib/app'
@@ -83,6 +83,15 @@ export function CommandPalette() {
         const r = getRun()
         if (!r || r.status === 'done') startFocus(focusSettings())
         void navigate({ to: '/focus' })
+      },
+    },
+    {
+      id: 'shortcuts',
+      label: 'Keyboard shortcuts',
+      icon: <Keyboard />,
+      run: () => {
+        close()
+        setUi({ shortcutsOpen: true })
       },
     },
     {

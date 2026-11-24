@@ -23,11 +23,11 @@ import {
   Undo2,
   ExternalLink,
 } from 'lucide-react'
-import { useState, type DragEvent, type MouseEvent } from 'react'
+import { useEffect, useState, type DragEvent, type MouseEvent } from 'react'
 import { getApp, useApp, useSyncState, useWs } from '#/lib/app'
 import { createPageOfKind, deleteForever, duplicatePage, pagePath, trashPage } from '#/lib/actions'
 import { openTab } from '#/lib/tabs'
-import { setUi, useUi } from '#/lib/ui'
+import { getUi, setUi, useUi } from '#/lib/ui'
 import { setLocalUser } from '#/lib/session'
 import type { PageKind, PageMeta } from '#/lib/types'
 import { timeAgo } from '#/lib/dates'
@@ -59,7 +59,27 @@ const NEW_KINDS: { kind: PageKind; label: string; icon: typeof FileText }[] = [
   { kind: 'meeting', label: 'Meeting note', icon: CalendarClock },
 ]
 
+/**
+ * Opening a page (from search, a link, a toast…) expands its parents in the
+ * sidebar and scrolls it into view, so you can see where it lives.
+ */
+function useRevealActive() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const id = pathname.startsWith('/p/') ? decodeURIComponent(pathname.slice(3)) : null
+  const ancestors = useWs(() => (id ? getApp().ws.ancestors(id).map((a) => a.id) : []))
+  useEffect(() => {
+    if (!id) return
+    const closed = ancestors.filter((a) => !getUi().expanded[a])
+    if (closed.length) setUi((s) => ({ expanded: { ...s.expanded, ...Object.fromEntries(closed.map((a) => [a, true])) } }))
+    const t = setTimeout(() => {
+      document.querySelector('aside [data-active="true"]')?.scrollIntoView({ block: 'nearest' })
+    }, 60)
+    return () => clearTimeout(t)
+  }, [id, ancestors])
+}
+
 export function Sidebar() {
+  useRevealActive()
   const open = useUi((s) => s.sidebarOpen)
   const width = useUi((s) => s.sidebarWidth)
   const mobile = useUi((s) => s.mobile)
@@ -340,6 +360,7 @@ function TreeItem({ page, depth, favoriteRow }: { page: PageMeta; depth: number;
         onDrop={onDrop}
         onClick={(e) => openPage(page.id, e)}
         onAuxClick={(e) => e.button === 1 && openPage(page.id, e)}
+        data-active={active && !favoriteRow ? 'true' : undefined}
         className={cn(
           'group/item relative flex h-[30px] cursor-pointer items-center gap-1 rounded-md pr-1 hover:bg-hover',
           active && 'bg-active text-fg',

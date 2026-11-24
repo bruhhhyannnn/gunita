@@ -82,6 +82,8 @@ export interface ReportSettings {
   heading: string
   /** Intro paragraph; {period} and {absences} are filled in. */
   intro: string
+  /** Fills {position} (and the old “[your position]”) in the intro. */
+  position?: string
   /** Leave out tasks that came from the daily template (check emails, …). */
   skipRoutine: boolean
   grouping: ReportGrouping

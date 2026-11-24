@@ -34,6 +34,8 @@ The full product spec and milestones are in [docs/PLAN.md](docs/PLAN.md).
 | Ctrl/⌘ J | Ask my notes |
 | Ctrl/⌘ Shift E | Quick capture |
 | Ctrl/⌘ \ | Toggle sidebar |
+| Ctrl/⌘ / | All keyboard shortcuts |
+| Ctrl/⌘ + / − / 0 | Bigger, smaller or default page text (per device) |
 | Ctrl/⌘ Z, Ctrl/⌘ Y (or Shift Z) | Undo / redo: text, titles, pages moved or deleted, database cells |
 | Alt ↑ / ↓ (or Ctrl/⌘ Shift ↑ / ↓) | Move the current task or block up / down (tasks move into the next section too) |
 | Tab | Accept AI suggestion (indents when no suggestion is showing) |

@@ -6,6 +6,7 @@ export interface UiState {
   paletteOpen: boolean
   askOpen: boolean
   captureOpen: boolean
+  shortcutsOpen: boolean
   mobile: boolean
   expanded: Record<string, boolean>
 }
@@ -26,6 +27,7 @@ function initial(): UiState {
     paletteOpen: false,
     askOpen: false,
     captureOpen: false,
+    shortcutsOpen: false,
     mobile,
     expanded: saved.expanded ?? {},
   }

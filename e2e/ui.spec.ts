@@ -58,3 +58,31 @@ test.describe('errors', () => {
     await expect(page.locator('aside').getByText('Settings', { exact: true })).toBeVisible() // the app around it still works
   })
 })
+
+test('Ctrl+/ lists the keyboard shortcuts', async ({ page }) => {
+  await login(page, 'keys')
+  await page.keyboard.press('Control+/')
+  const dialog = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText('Move the task or block up / down')
+  await expect(dialog).toContainText('Bigger / smaller text')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+})
+
+test('a newer deploy shows a reload banner', async ({ page }) => {
+  await page.route('**/precache-manifest.json', (r) => r.fulfill({ json: { version: '99999999999999', files: [] } }))
+  await login(page, 'update')
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+  await expect(page.getByText('A new version of Gunita is ready.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Reload' })).toBeVisible()
+})
+
+test('Settings shows the version and the offline copy', async ({ page }) => {
+  await login(page, 'about')
+  await page.locator('aside').getByText('Settings', { exact: true }).click()
+  await expect(page.getByText(/This copy was built/)).toBeVisible()
+  await page.getByRole('button', { name: 'Check for updates' }).click()
+  await expect(page.getByText('You have the latest version.')).toBeVisible()
+  await expect(page.getByText('Offline copy on this device')).toBeVisible()
+})

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Download, LogOut } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { getApp, useApp, useWs } from '#/lib/app'
 import { exportAll } from '#/lib/markdown'
 import { setLocalUser } from '#/lib/session'
@@ -14,6 +14,10 @@ import { NotionImport } from '#/components/NotionImport'
 import { DESKTOP_HOTKEY, isDesktop } from '#/lib/desktop'
 import { DEFAULT_SIZE, SIZES, setTextSize, useTextSize } from '#/lib/textSize'
 import { Slider } from '#/components/ui/slider'
+import { BUILD_TIME, checkForUpdate } from '#/lib/version'
+import { formatBytes, requestPersistence, useStorageInfo } from '#/lib/storage'
+import { setUi } from '#/lib/ui'
+import { modKey } from '#/components/ShortcutsDialog'
 
 export const Route = createFileRoute('/_app/settings')({ component: SettingsPage })
 
@@ -137,12 +141,21 @@ function SettingsPage() {
         )}
 
         <h2 className="mt-10 text-sm font-semibold text-muted">Your data</h2>
+        <StorageRow />
         <Row title="Import from Notion" desc="In Notion: Settings → Export → “Markdown & CSV”, include sub-pages. Then choose the zip here.">
           <NotionImport />
         </Row>
         <Row title="Export everything" desc="All pages as Markdown, databases as CSV, in a zip file.">
           <Button icon={<Download />} onClick={() => void exportAll()}>
             Export
+          </Button>
+        </Row>
+
+        <h2 className="mt-10 text-sm font-semibold text-muted">About</h2>
+        <AboutRow />
+        <Row title="Keyboard shortcuts" desc="Everything you can do from the keyboard.">
+          <Button onClick={() => setUi({ shortcutsOpen: true })}>
+            Show <kbd className="ml-1 text-xs text-faint">{modKey()} /</kbd>
           </Button>
         </Row>
       </div>
@@ -167,6 +180,55 @@ function TextSizeRow() {
           Reset
         </Button>
       </div>
+    </Row>
+  )
+}
+
+function AboutRow() {
+  const [state, setState] = useState<'idle' | 'checking' | 'latest' | 'update'>('idle')
+  const built = new Date(BUILD_TIME)
+  return (
+    <Row title="Version" desc={`This copy was built ${built.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} at ${built.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`}>
+      <div className="flex items-center gap-3">
+        {state === 'latest' && <span className="text-sm text-muted">You have the latest version.</span>}
+        {state === 'update' ? (
+          <Button variant="primary" onClick={() => location.reload()}>
+            Reload to update
+          </Button>
+        ) : (
+          <Button
+            disabled={state === 'checking'}
+            onClick={async () => {
+              setState('checking')
+              setState((await checkForUpdate()) ? 'update' : 'latest')
+            }}
+          >
+            {state === 'checking' ? 'Checking…' : 'Check for updates'}
+          </Button>
+        )}
+      </div>
+    </Row>
+  )
+}
+
+/** Whether the browser keeps this device's copy of your notes (see lib/storage.ts). */
+function StorageRow() {
+  const info = useStorageInfo()
+  if (!info) return null
+  return (
+    <Row
+      title="Offline copy on this device"
+      desc={
+        info.persisted
+          ? `Kept safe: the browser won't clear it to free space. Using ${formatBytes(info.usage)}.`
+          : `Using ${formatBytes(info.usage)}. The browser may clear it if the disk gets full; anything already synced comes back when you sign in.`
+      }
+    >
+      {info.persisted ? (
+        <span className="text-sm text-[#2e9f6b]">Protected</span>
+      ) : (
+        <Button onClick={() => void requestPersistence(true)}>Keep it safe</Button>
+      )}
     </Row>
   )
 }

@@ -12,11 +12,14 @@ import { runUndo } from '#/lib/undo'
 import { DEFAULT_SIZE, setTextSize, stepTextSize } from '#/lib/textSize'
 import { startFocusEngine } from '#/lib/focus'
 import { FocusPill } from '#/components/focus/FocusMini'
+import { UpdateBanner } from '#/components/UpdateBanner'
 import { config } from '#/config'
 import { isoDate } from '#/lib/dates'
 import { useTheme } from '#/lib/theme'
 import { AskPanel } from '#/components/AskPanel'
 import { QuickCapture } from '#/components/QuickCapture'
+import { ShortcutsDialog } from '#/components/ShortcutsDialog'
+import { requestPersistence } from '#/lib/storage'
 
 export const Route = createFileRoute('/_app')({ component: AppLayout })
 
@@ -88,6 +91,9 @@ function Shell() {
       } else if (mod && e.shiftKey && e.key.toLowerCase() === 'e') {
         e.preventDefault()
         setUi({ captureOpen: true })
+      } else if (mod && (e.key === '/' || e.key === '?')) {
+        e.preventDefault()
+        setUi((s) => ({ shortcutsOpen: !s.shortcutsOpen }))
       } else if (mod && e.key.toLowerCase() === 'j') {
         e.preventDefault()
         setUi((s) => ({ askOpen: !s.askOpen }))
@@ -147,7 +153,9 @@ function Shell() {
       {askOpen && <AskPanel />}
       <CommandPalette />
       <QuickCapture />
+      <ShortcutsDialog />
       <FocusPill />
+      <UpdateBanner />
       <Toaster />
     </div>
   )
@@ -159,6 +167,8 @@ function useFocusEngine() {
   const navigate = useNavigate()
   useEffect(() => {
     startFocusEngine()
+    // Ask the browser to keep the offline copy of your notes (quietly, see lib/storage.ts).
+    void requestPersistence()
     const onCue = (e: Event) => {
       if (document.visibilityState !== 'visible') return
       const { text } = (e as CustomEvent<{ text: string }>).detail

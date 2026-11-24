@@ -69,6 +69,9 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // The app checks this for new versions: always ask the network.
+  if (url.origin === location.origin && url.pathname === '/precache-manifest.json') return
+
   // Uploaded files are immutable.
   if (url.origin === location.origin && url.pathname.startsWith('/api/file/')) {
     event.respondWith(cacheFirst(req, IMAGES))

@@ -10,7 +10,7 @@ export const DEFAULT_REPORT: ReportSettings = {
   auto: true,
   heading: 'CERTIFICATE OF WORK ACCOMPLISHMENT',
   intro:
-    'This is to certify that I have performed the following tasks stipulated in my contract of services as [your position] for the period {period}, except on the following day/s: {absences}',
+    'This is to certify that I have performed the following tasks stipulated in my contract of services as {position} for the period {period}, except on the following day/s: {absences}',
   skipRoutine: true,
   grouping: 'ai',
 }
@@ -172,8 +172,17 @@ export function groupByDay(items: DoneItem[]): ReportGroup[] {
 
 // ---------- The report page ----------
 
-function introContent(intro: string, period: Period, absent: string): JSONContent[] {
-  const parts = intro.split(/(\{period\}|\{absences\})/)
+/** The placeholder shown while you haven't said what your position is. */
+export const POSITION_PLACEHOLDER = '[your position]'
+
+/** True if the intro still needs your position. */
+export function needsPosition(settings: ReportSettings): boolean {
+  return !settings.position?.trim() && /\{position\}|\[your position\]/i.test(settings.intro)
+}
+
+function introContent(intro: string, period: Period, absent: string, position: string | undefined): JSONContent[] {
+  const pos = position?.trim() || POSITION_PLACEHOLDER
+  const parts = intro.replace(/\{position\}|\[your position\]/gi, pos).split(/(\{period\}|\{absences\})/)
   return parts
     .filter(Boolean)
     .map((p) =>
@@ -188,7 +197,7 @@ function introContent(intro: string, period: Period, absent: string): JSONConten
 export function reportDoc(settings: ReportSettings, period: Period, absent: string, groups: ReportGroup[]): JSONContent {
   const content: JSONContent[] = [
     { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: settings.heading || 'Accomplishment report' }] },
-    { type: 'paragraph', content: introContent(settings.intro, period, absent) },
+    { type: 'paragraph', content: introContent(settings.intro, period, absent, settings.position) },
   ]
   if (!groups.length) content.push({ type: 'paragraph', content: [{ type: 'text', text: 'No completed tasks in this period yet.', marks: [{ type: 'italic' }] }] })
   for (const g of groups) {

@@ -35,8 +35,18 @@ test('drafts the accomplishment report on the 15th', async ({ page, context, bas
   await expect(body).not.toContainText('check emails') // routine tasks are left out
 
   // It lives in the list's "Accomplishment reports" folder, and lists the missed weekdays.
-  await expect(page.getByText('Accomplishment reports', { exact: true })).toBeVisible()
+  await expect(page.getByText('Accomplishment reports', { exact: true }).first()).toBeVisible()
   await expect(body).toContainText('November 11, 12 and 13')
+  // The sidebar opens up to show where the report is.
+  await expect(page.locator('aside [data-active="true"]')).toContainText('Nov 1–15, 2026')
+
+  // The intro still needs your position: fill it in right here.
+  await expect(body).toContainText('[your position]')
+  const missing = page.getByTestId('position-missing')
+  await missing.getByRole('textbox', { name: 'Your position' }).fill('Administrative Aide IV')
+  await missing.getByRole('button', { name: 'Save and update report' }).click()
+  await expect(body).toContainText('contract of services as Administrative Aide IV for the period')
+  await expect(missing).toBeHidden()
 
   // Copy pastes into Google Docs as formatted text.
   await page.getByRole('button', { name: 'Copy for Google Docs' }).click()
