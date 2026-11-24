@@ -7,6 +7,7 @@ import { isoDate } from '#/lib/dates'
 import type { PageMeta } from '#/lib/types'
 import { appendTaskToday, findDay, focusToday, isFirstList, planToday, repairDays, startToday } from '#/todo/logic'
 import { toast } from '../ui/toast'
+import { Button } from '../ui/button'
 import { TemplateDialog } from './TemplateDialog'
 import { ReportDialog } from './ReportDialog'
 import { TaskMenu } from './TaskMenu'
@@ -81,20 +82,15 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
   return (
     <div className="mb-2">
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={run}
-          disabled={!editor}
-          className="flex h-9 items-center gap-2 rounded-md border border-line px-3 text-sm font-semibold shadow-sm hover:bg-hover"
-        >
-          <Sun className="h-4 w-4 text-[#e9a800]" />
+        <Button onClick={run} disabled={!editor} className="font-semibold shadow-sm" icon={<Sun className="text-[#e9a800]" />}>
           {started ? 'Go to today' : 'TODO TODAY!'}
-        </button>
-        <button onClick={() => setTemplateOpen(true)} className="flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm text-muted hover:bg-hover">
-          <Settings2 className="h-4 w-4" /> Template
-        </button>
-        <button onClick={() => setReportOpen(true)} className="flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm text-muted hover:bg-hover">
-          <FileText className="h-4 w-4" /> Report
-        </button>
+        </Button>
+        <Button variant="ghost" icon={<Settings2 />} onClick={() => setTemplateOpen(true)}>
+          Template
+        </Button>
+        <Button variant="ghost" icon={<FileText />} onClick={() => setReportOpen(true)}>
+          Report
+        </Button>
       </div>
 
       {!started && preview && (
@@ -112,9 +108,9 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
                   .filter(Boolean)
                   .join(', ')}.`}
           </div>
-          <button onClick={run} className="h-8 rounded-md bg-accent px-3 font-medium text-white">
+          <Button variant="primary" size="sm" className="h-8" onClick={run}>
             Start today
-          </button>
+          </Button>
         </div>
       )}
 
@@ -124,14 +120,16 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
             {waiting.length} task{waiting.length === 1 ? '' : 's'} waiting (meetings, quick capture): {waiting.slice(0, 2).map((w) => `“${w.text}”`).join(', ')}
             {waiting.length > 2 ? '…' : ''}
           </span>
-          <button
-            className="h-8 rounded-md bg-accent px-3 font-medium text-white"
+          <Button
+            variant="primary"
+            size="sm"
+            className="h-8"
             onClick={() => {
               for (const item of getApp().ws.takeInbox(page.id, isFirstList(page.id))) appendTaskToday(editor, item.text, { source: item.sourceId ?? null })
             }}
           >
             Add to today
-          </button>
+          </Button>
         </div>
       )}
 

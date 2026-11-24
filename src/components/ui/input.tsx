@@ -4,7 +4,7 @@ import { cn } from './cn'
 const FIELD =
   'w-full rounded-md border border-line bg-bg text-fg outline-none transition placeholder:text-faint focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:opacity-50'
 
-export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { size?: 'sm' | 'md' }>(function Input(
+export const Input = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & { size?: 'sm' | 'md' }>(function Input(
   { className, size = 'sm', ...props },
   ref,
 ) {

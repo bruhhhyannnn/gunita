@@ -3,7 +3,7 @@ import { BubbleMenu } from '@tiptap/react/menus'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import type { AnyExtension } from '@tiptap/core'
 import type * as Y from 'yjs'
-import { Bold, Code, GripVertical, Highlighter, Italic, Link2, Strikethrough, Underline } from 'lucide-react'
+import { Bold, ChevronDown, Code, GripVertical, Highlighter, Italic, Link2, Strikethrough, Underline } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useApp } from '#/lib/app'
 import { cn } from '#/components/ui/cn'
@@ -141,25 +141,7 @@ function FormatButtons({ editor }: { editor: Editor }) {
   )
   return (
     <>
-      <select
-        className="h-8 rounded bg-transparent px-1 text-sm text-muted outline-none hover:bg-hover"
-        value={st.block}
-        onChange={(e) => {
-          const c = editor.chain().focus()
-          const v = e.target.value
-          if (v === 'text') c.setParagraph().run()
-          else if (v === 'h1' || v === 'h2' || v === 'h3') c.setHeading({ level: Number(v[1]) as 1 | 2 | 3 }).run()
-          else if (v === 'todo') c.toggleTaskList().run()
-          else if (v === 'bullet') c.toggleBulletList().run()
-        }}
-      >
-        <option value="text">Text</option>
-        <option value="h1">Heading 1</option>
-        <option value="h2">Heading 2</option>
-        <option value="h3">Heading 3</option>
-        <option value="todo">To-do</option>
-        <option value="bullet">Bullets</option>
-      </select>
+      <BlockTypeMenu editor={editor} current={st.block} />
       <div className="mx-0.5 h-5 w-px bg-line" />
       {btn(st.bold, () => editor.chain().focus().toggleBold().run(), <Bold />, 'Bold (Ctrl B)')}
       {btn(st.italic, () => editor.chain().focus().toggleItalic().run(), <Italic />, 'Italic (Ctrl I)')}
@@ -181,5 +163,60 @@ function FormatButtons({ editor }: { editor: Editor }) {
         'Link',
       )}
     </>
+  )
+}
+
+const BLOCK_TYPES = [
+  { id: 'text', label: 'Text' },
+  { id: 'h1', label: 'Heading 1' },
+  { id: 'h2', label: 'Heading 2' },
+  { id: 'h3', label: 'Heading 3' },
+  { id: 'todo', label: 'To-do list' },
+  { id: 'bullet', label: 'Bulleted list' },
+] as const
+
+/**
+ * "Turn into" dropdown inside the formatting bubble. It renders inline (no portal)
+ * and never takes focus, so the text selection and the bubble stay put.
+ */
+function BlockTypeMenu({ editor, current }: { editor: Editor; current: string }) {
+  const [open, setOpen] = useState(false)
+  const apply = (id: string) => {
+    const c = editor.chain().focus()
+    if (id === 'text') c.setParagraph().run()
+    else if (id === 'h1' || id === 'h2' || id === 'h3') c.setHeading({ level: Number(id[1]) as 1 | 2 | 3 }).run()
+    else if (id === 'todo') c.toggleTaskList().run()
+    else if (id === 'bullet') c.toggleBulletList().run()
+    setOpen(false)
+  }
+  return (
+    <div className="relative">
+      <button
+        onMouseDown={(e) => {
+          e.preventDefault()
+          setOpen((o) => !o)
+        }}
+        className="flex h-8 items-center gap-1 rounded px-2 text-sm text-muted hover:bg-hover"
+      >
+        {BLOCK_TYPES.find((b) => b.id === current)?.label ?? 'Text'}
+        <ChevronDown className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <div className="animate-pop absolute left-0 top-9 z-10 w-40 rounded-lg bg-popover p-1 shadow-pop">
+          {BLOCK_TYPES.map((b) => (
+            <button
+              key={b.id}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                apply(b.id)
+              }}
+              className={cn('flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-hover', b.id === current && 'text-accent')}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

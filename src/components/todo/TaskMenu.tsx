@@ -6,6 +6,7 @@ import { addDays, isoDate } from '#/lib/dates'
 import { TASK_MENU_EVENT, type TaskMenuEvent } from '#/todo/plugin'
 import { dropTask, moveTaskToDay, restoreTask, snoozeTask, SOMEDAY } from '#/todo/logic'
 import { MenuItem, MenuLabel, MenuSeparator } from '../ui/menu'
+import { Calendar } from '../ui/date-picker'
 
 function nextMonday() {
   const d = new Date()
@@ -44,15 +45,7 @@ export function TaskMenu({ pageId }: { pageId: string }) {
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="start" sideOffset={4} collisionPadding={8} className="animate-pop z-50 min-w-[220px] rounded-lg bg-popover p-1 text-[14px] shadow-pop outline-none">
           {pick ? (
-            <div className="p-2">
-              <input
-                type="date"
-                autoFocus
-                min={addDays(today, 1)}
-                onChange={(e) => e.target.value && run(() => snoozeTask(editor!, ev.pos, e.target.value))}
-                className="rounded-md border border-line bg-bg px-2 py-1 text-sm"
-              />
-            </div>
+            <Calendar min={addDays(today, 1)} onChange={(d) => run(() => snoozeTask(editor!, ev.pos, d))} />
           ) : (
             <>
               {(status === 'dropped' || status === 'snoozed') && (

@@ -12,6 +12,10 @@ import { useOpenPage } from '#/components/Sidebar'
 import { toast } from '#/components/ui/toast'
 import { cn } from '#/components/ui/cn'
 import { useDocumentTitle } from '#/lib/title'
+import { CheckboxField } from '#/components/ui/checkbox'
+import { Slider } from '#/components/ui/slider'
+import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
 
 export const Route = createFileRoute('/_app/brain')({ component: BrainPage })
 
@@ -51,15 +55,17 @@ function BrainPage() {
         </div>
         <div className="flex-1" />
         <span className="hidden text-xs text-faint sm:inline">{last ? `Updated ${timeAgo(last)}` : 'Not built yet'}</span>
-        <button
+        <Button
+          variant="primary"
+          size="sm"
+          className="h-8"
           onClick={() => void run(!last)}
           disabled={busy || !config?.claudeConfigured}
           title={config?.claudeConfigured ? 'Read recent notes and update topics, links and memories' : 'Needs Claude to be configured'}
-          className="flex h-8 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-medium text-white disabled:opacity-50"
+          icon={busy ? <Loader2 className="animate-spin" /> : <Sparkles />}
         >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           Update my brain
-        </button>
+        </Button>
       </div>
       {tab === 'graph' ? <GraphTab /> : <MemoryTab />}
     </div>
@@ -153,12 +159,8 @@ function GraphTab() {
             <div>— your links</div>
             <div className="text-[#a98bff]">·· AI suggestion (confirm it)</div>
           </div>
-          <label className="mt-1.5 flex items-center gap-2">
-            <input type="checkbox" checked={brainShape} onChange={(e) => setBrainShape(e.target.checked)} /> Brain shape
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={flat} onChange={(e) => setFlat(e.target.checked)} /> Flat (2D)
-          </label>
+          <CheckboxField className="mt-2 [&_label_span]:text-white/80" label="Brain shape" checked={brainShape} onCheckedChange={setBrainShape} />
+          <CheckboxField className="mt-1 [&_label_span]:text-white/80" label="Flat (2D)" checked={flat} onCheckedChange={setFlat} />
         </div>
       </div>
 
@@ -170,17 +172,16 @@ function GraphTab() {
             {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
           </button>
           <span className="w-20 text-white/60">{shortDate(dates[0])}</span>
-          <input
-            type="range"
+          <Slider
+            aria-label="Timeline"
+            className="flex-1"
             min={0}
             max={dates.length - 1}
             value={cut ?? dates.length - 1}
-            onChange={(e) => {
+            onValueChange={(v) => {
               setPlaying(false)
-              const v = Number(e.target.value)
               setCut(v === dates.length - 1 ? null : v)
             }}
-            className="flex-1 accent-[#a98bff]"
           />
           <span className="w-24 text-right font-medium">{cutoff ? shortDate(cutoff) : ''}</span>
           <span className="w-16 text-right text-white/50">{shown.nodes.length} nodes</span>
@@ -302,10 +303,10 @@ function MemoryTab() {
           }}
           className="mt-5 flex gap-2"
         >
-          <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Tell it something to remember, e.g. “I report to the CWA every Friday”" className="h-9 flex-1 rounded-md border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
-          <button className="flex h-9 items-center gap-1 rounded-md bg-accent px-3 text-sm font-medium text-white">
-            <Plus className="h-4 w-4" /> Add
-          </button>
+          <Input size="md" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Tell it something to remember, e.g. “I report to the CWA every Friday”" className="flex-1" />
+          <Button type="submit" variant="primary" icon={<Plus />}>
+            Add
+          </Button>
         </form>
         <div className="mt-6 divide-y divide-[var(--border)]">
           {facts.length === 0 && <p className="py-6 text-sm text-faint">Nothing yet. Press “Update my brain” to let the AI read your notes.</p>}

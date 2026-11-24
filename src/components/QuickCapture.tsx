@@ -5,6 +5,9 @@ import { getApp, useWs } from '#/lib/app'
 import { setUi, useUi } from '#/lib/ui'
 import { Dialog } from './ui/dialog'
 import { toast } from './ui/toast'
+import { Textarea } from './ui/input'
+import { Select } from './ui/select'
+import { Button } from './ui/button'
 
 /** Jot something down fast (great on a phone): as a task for today, or as a new note. Works offline. */
 export function QuickCapture() {
@@ -65,7 +68,7 @@ export function QuickCapture() {
       )}
       <Dialog open={open} onOpenChange={(o) => (o ? setUi({ captureOpen: true }) : close())} title="Quick capture">
         <div className="px-5 py-3">
-          <textarea
+          <Textarea
             autoFocus
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -73,25 +76,25 @@ export function QuickCapture() {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) asTask()
             }}
             placeholder="What's on your mind? One task per line…"
-            className="h-32 w-full resize-none rounded-md border border-line bg-bg p-3 outline-none focus:border-accent"
+            className="h-32"
           />
           {lists.length > 1 && (
-            <select value={listId} onChange={(e) => setListId(e.target.value)} className="mt-2 h-8 rounded-md border border-line bg-bg px-2 text-sm">
-              {lists.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.title || 'TODO'}
-                </option>
-              ))}
-            </select>
+            <Select
+              className="mt-2 w-56"
+              aria-label="TODO list"
+              value={listId || lists[0].id}
+              onValueChange={setListId}
+              options={lists.map((l) => ({ value: l.id, label: l.title || 'TODO' }))}
+            />
           )}
         </div>
         <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
-          <button onClick={asNote} className="flex h-9 items-center gap-1.5 rounded-md border border-line px-3 text-sm hover:bg-hover">
-            <FileText className="h-4 w-4" /> Save as note
-          </button>
-          <button onClick={asTask} className="flex h-9 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-medium text-white">
-            <CheckSquare className="h-4 w-4" /> Add as tasks
-          </button>
+          <Button icon={<FileText />} onClick={asNote}>
+            Save as note
+          </Button>
+          <Button variant="primary" icon={<CheckSquare />} onClick={asTask}>
+            Add as tasks
+          </Button>
         </div>
       </Dialog>
     </>

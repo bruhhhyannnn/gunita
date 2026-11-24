@@ -8,6 +8,7 @@ import { PageIcon } from '#/components/PageIcon'
 import { EmojiPicker } from '#/components/EmojiPicker'
 import { Popover, PopoverContent, PopoverTrigger } from '#/components/ui/popover'
 import { cn } from '#/components/ui/cn'
+import { Calendar } from '#/components/ui/date-picker'
 
 // ---------- Callout ----------
 
@@ -58,9 +59,10 @@ export const Callout = Node.create({
 
 function DateChipView({ node, updateAttributes, selected }: ReactNodeViewProps) {
   const date = (node.attrs.date as string) || isoDate()
+  const [open, setOpen] = useState(false)
   return (
     <NodeViewWrapper as="span" className="inline">
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <span
             contentEditable={false}
@@ -69,12 +71,13 @@ function DateChipView({ node, updateAttributes, selected }: ReactNodeViewProps) 
             @{relativeDate(date)}
           </span>
         </PopoverTrigger>
-        <PopoverContent align="start" className="p-3">
-          <input
-            type="date"
-            defaultValue={date}
-            className="rounded-md border border-line bg-bg px-2 py-1 text-sm"
-            onChange={(e) => e.target.value && updateAttributes({ date: e.target.value })}
+        <PopoverContent align="start">
+          <Calendar
+            value={date}
+            onChange={(d) => {
+              updateAttributes({ date: d })
+              setOpen(false)
+            }}
           />
         </PopoverContent>
       </Popover>

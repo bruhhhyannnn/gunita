@@ -20,6 +20,9 @@ import { PageIcon } from '../PageIcon'
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from '../ui/menu'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { cn } from '../ui/cn'
+import { Select } from '../ui/select'
+import { Input } from '../ui/input'
+import { Button } from '../ui/button'
 import { TableView } from './TableView'
 import { BoardView } from './BoardView'
 import { CalendarView } from './CalendarView'
@@ -158,9 +161,9 @@ export function DatabaseView({ page, inline }: { page: PageMeta; inline?: boolea
         )}
         <FilterButton db={page} view={view} />
         <SortButton db={page} view={view} />
-        <button onClick={newRow} className="ml-1 h-7 rounded-md bg-accent px-3 text-sm font-medium text-white hover:opacity-90">
+        <Button variant="primary" size="sm" onClick={newRow} className="ml-1">
           New
-        </button>
+        </Button>
       </div>
 
       <div className="mt-1">
@@ -180,18 +183,15 @@ function ViewOptions({ db, view }: { db: PageMeta; view: ViewDef }) {
     return (
       <div className="px-2 py-1 text-sm">
         <div className="mb-1 text-xs text-faint">Group by</div>
-        <select
+        <Select
+          size="xs"
+          className="w-full"
+          aria-label="Group by"
           value={view.groupBy ?? ''}
-          onChange={(e) => updateView(db.id, view.id, { groupBy: e.target.value || undefined })}
-          className="h-7 w-full rounded border border-line bg-bg px-1"
-        >
-          <option value="">Choose a property</option>
-          {groupable.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+          placeholder="Choose a property"
+          onValueChange={(v) => updateView(db.id, view.id, { groupBy: v || undefined })}
+          options={groupable.map((p) => ({ value: p.id, label: p.name }))}
+        />
       </div>
     )
   }
@@ -200,18 +200,15 @@ function ViewOptions({ db, view }: { db: PageMeta; view: ViewDef }) {
     return (
       <div className="px-2 py-1 text-sm">
         <div className="mb-1 text-xs text-faint">Show by</div>
-        <select
+        <Select
+          size="xs"
+          className="w-full"
+          aria-label="Date property"
           value={view.dateProp ?? ''}
-          onChange={(e) => updateView(db.id, view.id, { dateProp: e.target.value || undefined })}
-          className="h-7 w-full rounded border border-line bg-bg px-1"
-        >
-          <option value="">Choose a date property</option>
-          {dates.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+          placeholder="Choose a date property"
+          onValueChange={(v) => updateView(db.id, view.id, { dateProp: v || undefined })}
+          options={dates.map((p) => ({ value: p.id, label: p.name }))}
+        />
       </div>
     )
   }
@@ -246,32 +243,33 @@ function FilterButton({ db, view }: { db: PageMeta; view: ViewDef }) {
           const op = OPS.find((o) => o.op === f.op)
           return (
             <div key={i} className="mb-1 flex items-center gap-1 text-sm">
-              <select value={f.prop} onChange={(e) => set(filters.map((x, j) => (j === i ? { ...x, prop: e.target.value } : x)))} className="h-7 rounded border border-line bg-bg px-1">
-                {props.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <select value={f.op} onChange={(e) => set(filters.map((x, j) => (j === i ? { ...x, op: e.target.value as typeof f.op } : x)))} className="h-7 rounded border border-line bg-bg px-1">
-                {OPS.map((o) => (
-                  <option key={o.op} value={o.op}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              <Select
+                size="xs"
+                aria-label="Property"
+                value={f.prop}
+                onValueChange={(v) => set(filters.map((x, j) => (j === i ? { ...x, prop: v } : x)))}
+                options={props.map((p) => ({ value: p.id, label: p.name }))}
+              />
+              <Select
+                size="xs"
+                aria-label="Condition"
+                value={f.op}
+                onValueChange={(v) => set(filters.map((x, j) => (j === i ? { ...x, op: v as typeof f.op } : x)))}
+                options={OPS.map((o) => ({ value: o.op, label: o.label }))}
+              />
               {op?.needsValue &&
                 (prop?.options ? (
-                  <select value={f.value ?? ''} onChange={(e) => set(filters.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} className="h-7 flex-1 rounded border border-line bg-bg px-1">
-                    <option value="">—</option>
-                    {prop.options.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    size="xs"
+                    className="flex-1"
+                    aria-label="Value"
+                    value={f.value ?? ''}
+                    placeholder="—"
+                    onValueChange={(v) => set(filters.map((x, j) => (j === i ? { ...x, value: v } : x)))}
+                    options={prop.options.map((o) => ({ value: o.id, label: o.name }))}
+                  />
                 ) : (
-                  <input value={f.value ?? ''} onChange={(e) => set(filters.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} className="h-7 min-w-0 flex-1 rounded border border-line bg-bg px-2" />
+                  <Input value={f.value ?? ''} onChange={(e) => set(filters.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} className="h-7 min-w-0 flex-1" />
                 ))}
               <button onClick={() => set(filters.filter((_, j) => j !== i))} className="rounded p-1 hover:bg-hover">
                 <X className="h-3.5 w-3.5" />
@@ -302,17 +300,24 @@ function SortButton({ db, view }: { db: PageMeta; view: ViewDef }) {
         {sorts.length === 0 && <p className="px-1 py-1 text-sm text-muted">No sorts.</p>}
         {sorts.map((s, i) => (
           <div key={i} className="mb-1 flex items-center gap-1 text-sm">
-            <select value={s.prop} onChange={(e) => set(sorts.map((x, j) => (j === i ? { ...x, prop: e.target.value } : x)))} className="h-7 flex-1 rounded border border-line bg-bg px-1">
-              {props.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <select value={s.dir} onChange={(e) => set(sorts.map((x, j) => (j === i ? { ...x, dir: e.target.value as 'asc' | 'desc' } : x)))} className="h-7 rounded border border-line bg-bg px-1">
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
-            </select>
+            <Select
+              size="xs"
+              className="flex-1"
+              aria-label="Sort by"
+              value={s.prop}
+              onValueChange={(v) => set(sorts.map((x, j) => (j === i ? { ...x, prop: v } : x)))}
+              options={props.map((p) => ({ value: p.id, label: p.name }))}
+            />
+            <Select
+              size="xs"
+              aria-label="Direction"
+              value={s.dir}
+              onValueChange={(v) => set(sorts.map((x, j) => (j === i ? { ...x, dir: v as 'asc' | 'desc' } : x)))}
+              options={[
+                { value: 'asc', label: 'Ascending' },
+                { value: 'desc', label: 'Descending' },
+              ]}
+            />
             <button onClick={() => set(sorts.filter((_, j) => j !== i))} className="rounded p-1 hover:bg-hover">
               <X className="h-3.5 w-3.5" />
             </button>

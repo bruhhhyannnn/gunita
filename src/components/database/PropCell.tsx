@@ -6,6 +6,9 @@ import { shortDate } from '#/lib/dates'
 import type { PageMeta, PropDef, SelectOption } from '#/lib/types'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { cn } from '../ui/cn'
+import { Checkbox } from '../ui/checkbox'
+import { DatePicker } from '../ui/date-picker'
+import { Menu, MenuContent, MenuItem, MenuLabel, MenuTrigger } from '../ui/menu'
 
 export function OptionPill({ opt, onRemove }: { opt: SelectOption; onRemove?: () => void }) {
   return (
@@ -37,12 +40,7 @@ export function PropCell({ db, prop, row, className }: { db: PageMeta; prop: Pro
   if (prop.type === 'checkbox') {
     return (
       <div className={cn('flex h-full items-center px-2', className)}>
-        <input
-          type="checkbox"
-          checked={!!value}
-          onChange={(e) => set(e.target.checked || undefined)}
-          className="h-4 w-4 cursor-pointer accent-[var(--accent)]"
-        />
+        <Checkbox aria-label={prop.name} checked={!!value} onCheckedChange={(v) => set(v || undefined)} />
       </div>
     )
   }
@@ -50,31 +48,24 @@ export function PropCell({ db, prop, row, className }: { db: PageMeta; prop: Pro
     return <SelectCell db={db} prop={prop} value={value} onChange={set} className={className} />
   }
   if (prop.type === 'date') {
-    return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <button className={cn('flex h-full min-h-8 w-full items-center px-2 text-left text-sm', className)}>
-            {value ? shortDate(String(value)) : <span className="text-faint">Empty</span>}
-          </button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="flex items-center gap-2 p-2">
-          <input
-            type="date"
-            autoFocus
-            defaultValue={(value as string) ?? ''}
-            onChange={(e) => set(e.target.value || undefined)}
-            className="rounded-md border border-line bg-bg px-2 py-1 text-sm"
-          />
-          {value != null && (
-            <button className="text-sm text-muted hover:text-fg" onClick={() => set(undefined)}>
-              Clear
-            </button>
-          )}
-        </PopoverContent>
-      </Popover>
-    )
+    return <DateCell value={value as string | undefined} onChange={set} className={className} />
   }
   return <TextCell value={value == null ? '' : String(value)} type={prop.type} onChange={set} className={className} />
+}
+
+function DateCell({ value, onChange, className }: { value?: string; onChange: (v: unknown) => void; className?: string }) {
+  return (
+    <DatePicker
+      value={value ?? null}
+      clearable
+      onChange={(d) => onChange(d ?? undefined)}
+      trigger={
+        <button className={cn('flex h-full min-h-8 w-full items-center px-2 text-left text-sm', className)}>
+          {value ? shortDate(String(value)) : <span className="text-faint">Empty</span>}
+        </button>
+      }
+    />
+  )
 }
 
 function TextCell({
@@ -201,22 +192,14 @@ function SelectCell({
                 <OptionPill opt={o} />
                 {selected.includes(o.id) && <Check className="ml-auto h-3.5 w-3.5 text-muted" />}
               </button>
-              <select
-                title="Color"
-                value={o.color}
-                onChange={(e) =>
+              <ColorMenu
+                color={o.color}
+                onPick={(color) =>
                   updateProp(db.id, prop.id, {
-                    options: options.map((x) => (x.id === o.id ? { ...x, color: e.target.value as SelectOption['color'] } : x)),
+                    options: options.map((x) => (x.id === o.id ? { ...x, color } : x)),
                   })
                 }
-                className="w-5 cursor-pointer appearance-none bg-transparent text-xs text-faint opacity-0 group-hover:opacity-100"
-              >
-                {OPTION_COLORS.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
           ))}
           {q.trim() && !options.some((o) => o.name.toLowerCase() === q.trim().toLowerCase()) && (
@@ -233,5 +216,25 @@ function SelectCell({
         </div>
       </PopoverContent>
     </Popover>
+  )
+}
+
+function ColorMenu({ color, onPick }: { color: SelectOption['color']; onPick: (c: SelectOption['color']) => void }) {
+  return (
+    <Menu>
+      <MenuTrigger asChild>
+        <button title="Color" aria-label="Option color" className="grid h-6 w-6 place-items-center rounded opacity-0 hover:bg-active group-hover:opacity-100 data-[state=open]:opacity-100">
+          <span className={cn('h-3 w-3 rounded-sm', `opt-${color}`)} />
+        </button>
+      </MenuTrigger>
+      <MenuContent align="end" className="min-w-[160px]">
+        <MenuLabel>Color</MenuLabel>
+        {OPTION_COLORS.map((c) => (
+          <MenuItem key={c} icon={<span className={cn('h-3.5 w-3.5 rounded-sm', `opt-${c}`)} />} onSelect={() => onPick(c)} className={c === color ? 'font-semibold' : ''}>
+            {c[0].toUpperCase() + c.slice(1)}
+          </MenuItem>
+        ))}
+      </MenuContent>
+    </Menu>
   )
 }

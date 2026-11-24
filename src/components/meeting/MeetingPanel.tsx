@@ -8,6 +8,7 @@ import { pickFile, uploadFile } from '#/editor/uploads'
 import { toast } from '../ui/toast'
 import { ActionItemsDialog, type ActionItem } from './ActionItemsDialog'
 import { useTranscriber } from './transcribe'
+import { DateTimePicker } from '../ui/date-picker'
 
 const TEMPLATE: JSONContent[] = [
   { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Agenda' }] },
@@ -19,13 +20,6 @@ const TEMPLATE: JSONContent[] = [
   { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Action items' }] },
   { type: 'taskList', content: [{ type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph' }] }] },
 ]
-
-function toLocalInput(iso?: string) {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 
 export function MeetingPanel({ page, editor }: { page: PageMeta; editor: Editor | null }) {
   const { config } = useApp()
@@ -135,15 +129,10 @@ export function MeetingPanel({ page, editor }: { page: PageMeta; editor: Editor 
   return (
     <div className="mb-4 space-y-2 border-b border-line pb-4 text-sm">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-muted">
-        <label className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <CalendarClock className="h-4 w-4" />
-          <input
-            type="datetime-local"
-            value={toLocalInput(m.start)}
-            onChange={(e) => setMeeting({ start: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
-            className="rounded bg-transparent px-1 hover:bg-hover"
-          />
-        </label>
+          <DateTimePicker value={m.start} onChange={(iso) => setMeeting({ start: iso })} />
+        </div>
         <label className="flex min-w-60 flex-1 items-center gap-2">
           <Users className="h-4 w-4 flex-none" />
           <input

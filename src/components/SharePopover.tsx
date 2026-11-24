@@ -5,6 +5,9 @@ import type { PageMeta } from '#/lib/types'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 import { toast } from './ui/toast'
 import { cn } from './ui/cn'
+import { Switch } from './ui/switch'
+import { Input } from './ui/input'
+import { IconButton } from './ui/button'
 
 /** Publish a page (and its sub-pages) as a read-only public link. */
 export function SharePopover({ page }: { page: PageMeta }) {
@@ -38,33 +41,21 @@ export function SharePopover({ page }: { page: PageMeta }) {
             <div className="font-medium">Publish to web</div>
             <div className="text-xs text-muted">Anyone with the link can read this page and its sub-pages.</div>
           </div>
-          <button
-            role="switch"
-            aria-checked={!!url}
-            disabled={busy}
-            onClick={() => void toggle(!url)}
-            className={cn('relative h-5 w-9 flex-none rounded-full transition', url ? 'bg-accent' : 'bg-active')}
-          >
-            {busy ? (
-              <Loader2 className="absolute left-2.5 top-0.5 h-4 w-4 animate-spin text-white" />
-            ) : (
-              <span className={cn('absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition', url ? 'left-[18px]' : 'left-0.5')} />
-            )}
-          </button>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin text-faint" /> : <Switch aria-label="Publish to web" checked={!!url} onCheckedChange={(v) => void toggle(v)} />}
         </div>
         {url && (
           <div className="mt-3 flex items-center gap-2">
-            <input readOnly value={url} className="h-8 min-w-0 flex-1 rounded-md border border-line bg-bg px-2 text-xs" onFocus={(e) => e.target.select()} />
-            <button
+            <Input readOnly value={url} className="min-w-0 flex-1 text-xs" onFocus={(e) => e.target.select()} />
+            <IconButton
+              label="Copy link"
+              className="h-8 w-8 border border-line"
               onClick={() => {
                 void navigator.clipboard.writeText(url)
                 toast('Link copied')
               }}
-              className="grid h-8 w-8 place-items-center rounded-md border border-line hover:bg-hover"
-              title="Copy link"
             >
-              <Copy className="h-4 w-4" />
-            </button>
+              <Copy />
+            </IconButton>
           </div>
         )}
         {url && <p className="mt-2 text-xs text-faint">Visitors see the latest synced version. Turn this off any time to stop sharing.</p>}

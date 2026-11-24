@@ -3,6 +3,9 @@ import { getApp, useWs } from '#/lib/app'
 import type { PageMeta } from '#/lib/types'
 import { Dialog } from '../ui/dialog'
 import { toast } from '../ui/toast'
+import { Checkbox } from '../ui/checkbox'
+import { Select } from '../ui/select'
+import { Button } from '../ui/button'
 
 export interface ActionItem {
   text: string
@@ -36,39 +39,39 @@ export function ActionItemsDialog({ meeting, items, onClose }: { meeting: PageMe
     <Dialog open onOpenChange={(o) => !o && onClose()} title="Action items" description="Checked items go to your TODO list the next time you start a day (or right away, from the list).">
       <div className="max-h-[50vh] space-y-1 overflow-y-auto px-5 py-3">
         {items.map((it, i) => (
-          <label key={i} className="flex items-start gap-2 rounded-md px-1 py-1.5 hover:bg-hover">
-            <input type="checkbox" className="mt-1" checked={!!picked[i]} onChange={(e) => setPicked((p) => p.map((v, j) => (j === i ? e.target.checked : v)))} />
+          <div key={i} className="flex items-start gap-2.5 rounded-md px-1 py-1.5 hover:bg-hover">
+            <Checkbox className="mt-1" checked={!!picked[i]} onCheckedChange={(v) => setPicked((p) => p.map((x, j) => (j === i ? v : x)))} />
             <span className="flex-1">
               {it.text}
               <span className="ml-2 text-xs text-faint">
                 {[it.owner && `owner: ${it.owner}`, it.due && `due ${it.due}`].filter(Boolean).join(' · ')}
               </span>
             </span>
-          </label>
+          </div>
         ))}
       </div>
       <div className="flex items-center justify-between gap-3 border-t border-line px-5 py-3 text-sm">
         {lists.length ? (
           <label className="flex items-center gap-2 text-muted">
             Send to
-            <select value={listId} onChange={(e) => setListId(e.target.value)} className="h-8 rounded-md border border-line bg-bg px-2">
-              {lists.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.title || 'TODO'}
-                </option>
-              ))}
-            </select>
+            <Select
+              className="w-48"
+              aria-label="TODO list"
+              value={listId}
+              onValueChange={setListId}
+              options={lists.map((l) => ({ value: l.id, label: l.title || 'TODO' }))}
+            />
           </label>
         ) : (
           <span className="text-muted">Create a TODO list first.</span>
         )}
         <div className="flex gap-2">
-          <button onClick={onClose} className="h-8 rounded-md px-3 text-muted hover:bg-hover">
+          <Button variant="ghost" onClick={onClose}>
             Skip
-          </button>
-          <button onClick={send} disabled={!lists.length} className="h-8 rounded-md bg-accent px-3 font-medium text-white disabled:opacity-50">
+          </Button>
+          <Button variant="primary" onClick={send} disabled={!lists.length}>
             Send {picked.filter(Boolean).length}
-          </button>
+          </Button>
         </div>
       </div>
     </Dialog>
