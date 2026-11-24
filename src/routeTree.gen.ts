@@ -14,7 +14,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppBrainRouteImport } from './routes/_app/brain'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
-import { Route as ApiArtRouteImport } from './routes/api/art'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as ApiMeRouteImport } from './routes/api/me'
 import { Route as ApiShareRouteImport } from './routes/api/share'
@@ -59,11 +58,6 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AppRoute,
-} as any)
-const ApiArtRoute = ApiArtRouteImport.update({
-  id: '/api/art',
-  path: '/api/art',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiFilesRoute = ApiFilesRouteImport.update({
   id: '/api/files',
@@ -171,7 +165,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/brain': typeof AppBrainRoute
   '/settings': typeof AppSettingsRoute
-  '/api/art': typeof ApiArtRoute
   '/api/files': typeof ApiFilesRoute
   '/api/me': typeof ApiMeRoute
   '/api/share': typeof ApiShareRoute
@@ -197,7 +190,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/brain': typeof AppBrainRoute
   '/settings': typeof AppSettingsRoute
-  '/api/art': typeof ApiArtRoute
   '/api/files': typeof ApiFilesRoute
   '/api/me': typeof ApiMeRoute
   '/api/share': typeof ApiShareRoute
@@ -226,7 +218,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/brain': typeof AppBrainRoute
   '/_app/settings': typeof AppSettingsRoute
-  '/api/art': typeof ApiArtRoute
   '/api/files': typeof ApiFilesRoute
   '/api/me': typeof ApiMeRoute
   '/api/share': typeof ApiShareRoute
@@ -256,7 +247,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/brain'
     | '/settings'
-    | '/api/art'
     | '/api/files'
     | '/api/me'
     | '/api/share'
@@ -282,7 +272,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/brain'
     | '/settings'
-    | '/api/art'
     | '/api/files'
     | '/api/me'
     | '/api/share'
@@ -310,7 +299,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/brain'
     | '/_app/settings'
-    | '/api/art'
     | '/api/files'
     | '/api/me'
     | '/api/share'
@@ -337,7 +325,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
-  ApiArtRoute: typeof ApiArtRoute
   ApiFilesRoute: typeof ApiFilesRoute
   ApiMeRoute: typeof ApiMeRoute
   ApiShareRoute: typeof ApiShareRoute
@@ -395,13 +382,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
-    }
-    '/api/art': {
-      id: '/api/art'
-      path: '/api/art'
-      fullPath: '/api/art'
-      preLoaderRoute: typeof ApiArtRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/api/files': {
       id: '/api/files'
@@ -565,7 +545,6 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
-  ApiArtRoute: ApiArtRoute,
   ApiFilesRoute: ApiFilesRoute,
   ApiMeRoute: ApiMeRoute,
   ApiShareRoute: ApiShareRoute,

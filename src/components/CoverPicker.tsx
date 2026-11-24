@@ -4,6 +4,9 @@ import type { Cover } from '#/lib/types'
 import { pickFile, uploadFile } from '#/editor/uploads'
 import { cn } from './ui/cn'
 import { toast } from './ui/toast'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { searchArt, type Art } from '#/lib/art'
 
 export const GRADIENTS = [
   'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
@@ -18,41 +21,33 @@ export const GRADIENTS = [
 
 const PRESETS = ['Bierstadt', 'Degas', 'Monet', 'Van Gogh', 'Hokusai', 'landscape', 'mountains', 'ocean', 'garden', 'night']
 
-interface Art {
-  id: number
-  title: string
-  artist: string
-  thumb: string
-  full: string
-}
-
-const artCache = new Map<string, Art[]>()
+const artCache = new Map<string, { items: Art[]; source: string; error?: string }>()
 
 export function CoverPicker({ onPick, onRemove }: { onPick: (c: Cover) => void; onRemove?: () => void }) {
   const [tab, setTab] = useState<'gallery' | 'colors' | 'upload' | 'link'>('gallery')
   const [q, setQ] = useState('Bierstadt')
-  const [art, setArt] = useState<Art[]>(artCache.get('Bierstadt') ?? [])
+  const [result, setResult] = useState<{ items: Art[]; source: string; error?: string }>(() => artCache.get('Bierstadt') ?? { items: [], source: '' })
   const [loading, setLoading] = useState(false)
   const [link, setLink] = useState('')
+  const art = result.items
 
   const search = async (query: string) => {
-    const key = query.trim()
+    const key = query.trim().toLowerCase()
     if (!key) return
-    if (artCache.has(key)) {
-      setArt(artCache.get(key)!)
+    const hit = artCache.get(key)
+    if (hit) {
+      setResult(hit)
+      return
+    }
+    if (!navigator.onLine) {
+      setResult({ items: [], source: '', error: 'The gallery needs an internet connection. You can still pick a color or upload an image later.' })
       return
     }
     setLoading(true)
-    try {
-      const res = await fetch(`/api/art?q=${encodeURIComponent(key)}`)
-      const data = (await res.json()) as { items: Art[] }
-      artCache.set(key, data.items)
-      setArt(data.items)
-    } catch {
-      setArt([])
-    } finally {
-      setLoading(false)
-    }
+    const r = await searchArt(query)
+    if (r.items.length) artCache.set(key, r)
+    setResult(r)
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -117,19 +112,29 @@ export function CoverPicker({ onPick, onRemove }: { onPick: (c: Cover) => void; 
                 <button
                   key={a.id}
                   title={`${a.title} — ${a.artist}`}
-                  onClick={() => onPick({ kind: 'image', value: a.full, y: 50, credit: `${a.title}, ${a.artist} (Art Institute of Chicago)` })}
+                  onClick={() => onPick({ kind: 'image', value: a.full, y: 50, credit: a.credit })}
                   className="group relative h-20 overflow-hidden rounded-md bg-hover"
                 >
                   <img src={a.thumb} alt={a.title} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" />
                 </button>
               ))}
               {!loading && art.length === 0 && (
-                <p className="col-span-3 py-6 text-center text-sm text-muted">
-                  {navigator.onLine ? 'No paintings found.' : 'The gallery needs an internet connection.'}
-                </p>
+                <div className="col-span-3 py-6 text-center text-sm text-muted">
+                  {result.error ? (
+                    <>
+                      <p>Couldn't load paintings right now.</p>
+                      <p className="mt-1 text-xs text-faint">{result.error}</p>
+                      <Button size="sm" className="mt-3" onClick={() => void search(q)}>
+                        Try again
+                      </Button>
+                    </>
+                  ) : (
+                    'No paintings found. Try another word.'
+                  )}
+                </div>
               )}
             </div>
-            <p className="mt-2 text-[11px] text-faint">Public-domain works from the Art Institute of Chicago.</p>
+            <p className="mt-2 text-[11px] text-faint">Public-domain works{result.source ? ` from ${result.source}` : ''}.</p>
           </>
         )}
         {tab === 'colors' && (
@@ -164,13 +169,10 @@ export function CoverPicker({ onPick, onRemove }: { onPick: (c: Cover) => void; 
             }}
             className="flex gap-2"
           >
-            <input
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              placeholder="Paste an image link…"
-              className="h-8 flex-1 rounded-md border border-line bg-bg px-2 text-sm outline-none"
-            />
-            <button className="h-8 rounded-md bg-accent px-3 text-sm text-white">Submit</button>
+            <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Paste an image link…" className="flex-1" />
+            <Button type="submit" variant="primary" size="sm" className="h-8">
+              Submit
+            </Button>
           </form>
         )}
       </div>

@@ -241,6 +241,10 @@ pub fn run() {
                 .min_inner_size(420.0, 480.0)
                 .visible(!hidden)
                 .initialization_script(INIT_SCRIPT)
+                // The page sets titles like "☀️ Work TODO – Gunita"; show them on the taskbar too.
+                .on_document_title_changed(|window, title| {
+                    let _ = window.set_title(if title.trim().is_empty() { "Gunita" } else { &title });
+                })
                 .on_navigation(move |url| match url.scheme() {
                     "about" | "blob" | "data" => true,
                     "http" | "https" if url.origin() == origin.origin() => {

@@ -36,10 +36,12 @@ import { TodoToolbar } from './todo/TodoToolbar'
 import { MeetingPanel } from './meeting/MeetingPanel'
 import { SharePopover } from './SharePopover'
 import { aiExtensions } from '#/ai/extensions'
+import { useDocumentTitle } from '#/lib/title'
 import { TodoDecorations } from '#/todo/plugin'
 
 export function PageView({ pageId }: { pageId: string }) {
   const page = usePage(pageId)
+  useDocumentTitle(page ? `${page.icon && !page.icon.startsWith('/') && !page.icon.startsWith('http') ? page.icon + ' ' : ''}${page.title || 'Untitled'}` : null)
   const scroller = useRef<HTMLDivElement>(null)
   const [editor, setEditor] = useState<Editor | null>(null)
   const kind = page?.kind

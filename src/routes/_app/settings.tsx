@@ -6,6 +6,7 @@ import { exportAll } from '#/lib/markdown'
 import { setLocalUser } from '#/lib/session'
 import type { Settings } from '#/lib/types'
 import { cn } from '#/components/ui/cn'
+import { useDocumentTitle } from '#/lib/title'
 import { DESKTOP_HOTKEY, isDesktop } from '#/lib/desktop'
 
 export const Route = createFileRoute('/_app/settings')({ component: SettingsPage })
@@ -36,6 +37,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
 }
 
 function SettingsPage() {
+  useDocumentTitle('Settings')
   const { user, config } = useApp()
   const s = useWs((x) => x.settings)
   const set = (patch: Partial<Settings>) => getApp().ws.setSettings(patch)

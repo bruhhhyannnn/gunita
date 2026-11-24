@@ -347,7 +347,8 @@ function TreeItem({ page, depth, favoriteRow }: { page: PageMeta; depth: number;
           </span>
         </button>
         <span className={cn('flex-1 truncate', !page.title && 'text-faint')}>{page.title || 'Untitled'}</span>
-        <div className="hidden items-center group-hover/item:flex" onClick={(e) => e.stopPropagation()}>
+        {/* Stay visible while a menu is open so it stays anchored next to this row. */}
+        <div className="hidden items-center group-hover/item:flex has-[[data-state=open]]:flex" onClick={(e) => e.stopPropagation()}>
           <PageMenu page={page} />
           <Menu>
             <MenuTrigger asChild>

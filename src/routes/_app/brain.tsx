@@ -11,6 +11,7 @@ import { PageIcon } from '#/components/PageIcon'
 import { useOpenPage } from '#/components/Sidebar'
 import { toast } from '#/components/ui/toast'
 import { cn } from '#/components/ui/cn'
+import { useDocumentTitle } from '#/lib/title'
 
 export const Route = createFileRoute('/_app/brain')({ component: BrainPage })
 
@@ -31,6 +32,7 @@ function useReflect() {
 }
 
 function BrainPage() {
+  useDocumentTitle('Brain')
   const [tab, setTab] = useState<'graph' | 'memory'>('graph')
   const { config } = useApp()
   const { busy, run } = useReflect()

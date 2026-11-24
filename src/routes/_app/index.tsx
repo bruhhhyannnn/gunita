@@ -8,13 +8,16 @@ import type { PageKind } from '#/lib/types'
 import { PageIcon } from '#/components/PageIcon'
 import { useOpenPage } from '#/components/Sidebar'
 import { setUi } from '#/lib/ui'
+import { useDocumentTitle } from '#/lib/title'
+import { config } from '#/config'
 import { UpcomingMeetings } from '#/components/meeting/UpcomingMeetings'
 
 export const Route = createFileRoute('/_app/')({
   component: Home,
-  validateSearch: (s: Record<string, unknown>): { start?: string; capture?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { start?: string; capture?: string; crash?: string } => ({
     ...(typeof s.start === 'string' ? { start: s.start } : {}),
     ...(s.capture ? { capture: '1' } : {}),
+    ...(s.crash ? { crash: '1' } : {}),
   }),
 })
 
@@ -24,10 +27,13 @@ function greeting() {
 }
 
 function Home() {
+  useDocumentTitle('Home')
   const { user, index } = useApp()
   const openPage = useOpenPage()
   const navigate = useNavigate()
   const search = Route.useSearch()
+  // Developer mode only: /?crash=1 previews the error page.
+  if (search.crash && config.errorPage === 'developer') throw new Error('Test crash (preview of the error page)')
   const recent = useWs((s) =>
     Object.values(s.pages)
       .filter((p) => !p.trashedAt)

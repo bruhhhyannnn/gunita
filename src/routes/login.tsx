@@ -2,10 +2,12 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { fetchMe, setLocalUser, type ServerConfig } from '#/lib/session'
 import { isDesktop } from '#/lib/desktop'
+import { useDocumentTitle } from '#/lib/title'
 
 export const Route = createFileRoute('/login')({ component: Login })
 
 function Login() {
+  useDocumentTitle('Sign in')
   const navigate = useNavigate()
   const [config, setConfig] = useState<ServerConfig | null>(null)
   const [offline, setOffline] = useState(false)

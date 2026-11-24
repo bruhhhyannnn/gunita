@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Shuffle, Trash2 } from 'lucide-react'
+import { Input } from './ui/input'
+import { IconButton } from './ui/button'
 
 interface Emoji {
   unicode: string
@@ -66,28 +69,22 @@ export function EmojiPicker({ onPick, onRemove }: { onPick: (emoji: string) => v
   }
 
   return (
-    <div className="w-[352px] p-2">
-      <div className="flex gap-2">
-        <input
-          autoFocus
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search emoji…"
-          className="h-8 flex-1 rounded-md border border-line bg-bg px-2 text-sm outline-none focus:border-accent"
-        />
-        <button
-          className="h-8 rounded-md px-2 text-sm text-muted hover:bg-hover"
+    <div className="w-[344px] max-w-[calc(100vw-24px)] p-2">
+      <div className="flex items-center gap-1">
+        <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search emoji…" className="min-w-0 flex-1" />
+        <IconButton
+          label="Random emoji"
           onClick={() => {
             const pool = all.length ? all : [{ unicode: '📄', label: '' }]
             pick(pool[Math.floor(Math.random() * pool.length)].unicode)
           }}
         >
-          Random
-        </button>
+          <Shuffle />
+        </IconButton>
         {onRemove && (
-          <button className="h-8 rounded-md px-2 text-sm text-muted hover:bg-hover" onClick={onRemove}>
-            Remove
-          </button>
+          <IconButton label="Remove icon" onClick={onRemove}>
+            <Trash2 />
+          </IconButton>
         )}
       </div>
       <div className="mt-2 h-72 overflow-y-auto">
@@ -96,13 +93,13 @@ export function EmojiPicker({ onPick, onRemove }: { onPick: (emoji: string) => v
           g.items.length ? (
             <div key={g.name}>
               <div className="sticky top-0 bg-popover px-1 py-1 text-xs text-faint">{g.name}</div>
-              <div className="grid grid-cols-10">
+              <div className="grid grid-cols-9">
                 {g.items.map((e) => (
                   <button
                     key={g.name + e.unicode}
                     title={e.label}
                     onClick={() => pick(e.unicode)}
-                    className="grid h-8 w-8 place-items-center rounded text-[20px] hover:bg-hover"
+                    className="grid h-9 w-9 place-items-center rounded text-[20px] hover:bg-hover"
                   >
                     {e.unicode}
                   </button>
