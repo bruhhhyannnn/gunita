@@ -9,6 +9,7 @@ import { TabBar } from '#/components/TabBar'
 import { CommandPalette } from '#/components/CommandPalette'
 import { Toaster, toast } from '#/components/ui/toast'
 import { config } from '#/config'
+import { isoDate } from '#/lib/dates'
 import { useTheme } from '#/lib/theme'
 import { AskPanel } from '#/components/AskPanel'
 import { QuickCapture } from '#/components/QuickCapture'
@@ -68,6 +69,7 @@ function AppLayout() {
 function Shell() {
   useTheme()
   const navigate = useNavigate()
+  useAutoReports()
   const askOpen = useUi((s) => s.askOpen)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -127,4 +129,29 @@ function Shell() {
       <Toaster />
     </div>
   )
+}
+
+/** On the 15th and month end, draft accomplishment reports and say so. */
+function useAutoReports() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    const run = async () => {
+      // Wait for the first sync so another device's draft isn't duplicated.
+      await new Promise((r) => setTimeout(r, 8000))
+      const { autoDraftReports } = await import('#/lib/report')
+      const made = await autoDraftReports().catch(() => [])
+      for (const m of made) {
+        const endsToday = m.period.to === isoDate()
+        toast(
+          `📝 Your ${m.period.short} accomplishment report is drafted${endsToday ? '. Regenerate tonight to include today' : ''}.`,
+          { label: 'Open', run: () => void navigate({ to: '/p/$pageId', params: { pageId: m.pageId } }) },
+          12000,
+        )
+      }
+    }
+    void run()
+    const onVisible = () => document.visibilityState === 'visible' && void run()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [navigate])
 }

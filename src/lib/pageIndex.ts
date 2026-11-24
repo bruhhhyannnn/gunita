@@ -8,7 +8,8 @@ export interface IndexedTask {
   taskId: string
   text: string
   checked: boolean
-  status?: string // 'moved' | 'dropped' | 'snoozed' | 'someday'
+  status?: string // 'moved' | 'dropped' | 'snoozed' | 'someday' | 'archived'
+  templateId?: string
   day?: string // YYYY-MM-DD of the TODO day section it lives in
   since?: string
   carry?: number
@@ -84,6 +85,7 @@ export function extract(id: string, doc: Y.Doc): PageIndexEntry {
           text,
           checked: [true, 'true'].includes(c.getAttribute('checked') as never),
           status: (c.getAttribute('status') as string) || undefined,
+          templateId: (c.getAttribute('templateId') as string) || undefined,
           day: ctx.day,
           since: (c.getAttribute('since') as string) || undefined,
           carry: Number(c.getAttribute('carry') || 0) || undefined,

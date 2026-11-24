@@ -34,6 +34,7 @@ import { DatabaseView } from './database/DatabaseView'
 import { RowProperties } from './database/RowProperties'
 import { TodoToolbar } from './todo/TodoToolbar'
 import { MeetingPanel } from './meeting/MeetingPanel'
+import { ReportToolbar } from './todo/ReportToolbar'
 import { SharePopover } from './SharePopover'
 import { aiExtensions } from '#/ai/extensions'
 import { useDocumentTitle } from '#/lib/title'
@@ -87,6 +88,7 @@ export function PageView({ pageId }: { pageId: string }) {
             {page.kind === 'row' && <RowProperties page={page} />}
             {page.kind === 'todo' && <TodoToolbar page={page} editor={editor} />}
             {page.kind === 'meeting' && <MeetingPanel page={page} editor={editor} />}
+            {page.reportFor && <ReportToolbar page={page} editor={editor} />}
             <PageEditor key={page.id} pageId={page.id} onReady={setEditor} extra={extra} />
           </>
         )}

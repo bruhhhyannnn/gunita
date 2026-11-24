@@ -1,154 +1,135 @@
 import type { Editor } from '@tiptap/react'
-import { Copy, Loader2, Sparkles } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { addDays, isoDate, parseIso, shortDate } from '#/lib/dates'
-import { useApp } from '#/lib/app'
-import type { PageMeta } from '#/lib/types'
-import { doneTasks, type DoneTask } from '#/todo/logic'
-import { polishReport } from '#/ai/client'
+import { useNavigate } from '@tanstack/react-router'
+import { ChevronRight, FileText, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { getApp, useApp } from '#/lib/app'
+import { isoDate, addDays } from '#/lib/dates'
+import type { PageMeta, ReportGrouping, ReportSettings } from '#/lib/types'
+import { duePeriod, findReportPage, generateReport, makePeriod, monthPeriod, periodOf, previousPeriod, reportSettings, type Period } from '#/lib/report'
 import { Dialog } from '../ui/dialog'
+import { Button } from '../ui/button'
+import { Select } from '../ui/select'
+import { Switch } from '../ui/switch'
+import { CheckboxField } from '../ui/checkbox'
+import { Input, Textarea } from '../ui/input'
+import { DatePicker } from '../ui/date-picker'
 import { toast } from '../ui/toast'
-import { cn } from '../ui/cn'
 
-type Range = 'today' | 'yesterday' | 'week' | 'lastweek' | 'month' | 'custom'
+type Choice = 'due' | 'current' | 'previous' | 'month' | 'custom'
 
-function rangeFor(r: Range, custom: { from: string; to: string }): { from: string; to: string } {
-  const today = isoDate()
-  const dow = (parseIso(today).getDay() + 6) % 7 // Monday = 0
-  const monday = addDays(today, -dow)
-  switch (r) {
-    case 'today':
-      return { from: today, to: today }
-    case 'yesterday':
-      return { from: addDays(today, -1), to: addDays(today, -1) }
-    case 'week':
-      return { from: monday, to: today }
-    case 'lastweek':
-      return { from: addDays(monday, -7), to: addDays(monday, -1) }
-    case 'month':
-      return { from: today.slice(0, 8) + '01', to: today }
-    default:
-      return custom
-  }
-}
-
-function dayLabel(d: string) {
-  return parseIso(d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-}
-
-export function formatReport(tasks: DoneTask[], byDay: boolean, from: string, to: string): string {
-  if (!tasks.length) return ''
-  const bullet = (t: DoneTask) => `${'    '.repeat(t.depth)}• ${t.text}`
-  const header = from === to ? `Accomplishments – ${dayLabel(from)}` : `Accomplishments – ${shortDate(from)} to ${shortDate(to)}`
-  if (!byDay) {
-    // Merge repeated daily tasks (e.g. "check emails") into one line.
-    const seen = new Set<string>()
-    const lines = tasks.filter((t) => t.depth === 0).filter((t) => !seen.has(t.text.toLowerCase()) && seen.add(t.text.toLowerCase()))
-    return [header, '', ...lines.map(bullet)].join('\n')
-  }
-  const out = [header]
-  let day = ''
-  for (const t of tasks) {
-    if (t.day !== day) {
-      day = t.day
-      out.push('', dayLabel(day))
-    }
-    out.push(bullet(t))
-  }
-  return out.join('\n')
-}
-
-/** Plain-text accomplishment report from checked tasks, ready to paste into the CWA template. */
-export function ReportDialog({
-  page,
-  editor,
-  open,
-  onOpenChange,
-}: {
-  page: PageMeta
-  editor: Editor | null
-  open: boolean
-  onOpenChange: (o: boolean) => void
-}) {
+/** Settings and manual run for the semi-monthly accomplishment report. */
+export function ReportDialog({ page, open, onOpenChange }: { page: PageMeta; editor: Editor | null; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { config } = useApp()
-  const [range, setRange] = useState<Range>('week')
-  const [custom, setCustom] = useState({ from: addDays(isoDate(), -6), to: isoDate() })
-  const [byDay, setByDay] = useState(true)
-  const [text, setText] = useState('')
+  const navigate = useNavigate()
+  const settings = reportSettings(page)
+  const [choice, setChoice] = useState<Choice>('due')
+  const [custom, setCustom] = useState({ from: addDays(isoDate(), -14), to: isoDate() })
   const [busy, setBusy] = useState(false)
-  const r = rangeFor(range, custom)
-  const tasks = useMemo(() => (editor && open ? doneTasks(editor, r.from, r.to) : []), [editor, open, r.from, r.to])
+  const [showWording, setShowWording] = useState(false)
+  const set = (patch: Partial<ReportSettings>) => getApp().ws.updatePage(page.id, { report: { ...settings, ...patch } })
 
-  useEffect(() => {
-    setText(formatReport(tasks, byDay, r.from, r.to))
-  }, [tasks, byDay, r.from, r.to])
+  const due = duePeriod()
+  const current = periodOf(isoDate())
+  const periods: Record<Choice, Period> = {
+    due,
+    current,
+    previous: previousPeriod(due),
+    month: monthPeriod(isoDate()),
+    custom: makePeriod(custom.from, custom.to),
+  }
+  const period = periods[choice]
+  const existing = findReportPage(page.id, period)
+
+  const create = async () => {
+    setBusy(true)
+    try {
+      const r = await generateReport(page.id, period)
+      onOpenChange(false)
+      toast(`Report for ${period.short}: ${r.count} finished task${r.count === 1 ? '' : 's'}${r.usedAi ? ', written up by AI' : ''}.`)
+      void navigate({ to: '/p/$pageId', params: { pageId: r.pageId } })
+    } catch (e) {
+      toast((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const options: { value: Choice; label: string }[] = [
+    { value: 'due', label: `Due report (${due.short})` },
+    ...(current.from !== due.from ? [{ value: 'current' as Choice, label: `This period so far (${current.short})` }] : []),
+    { value: 'previous', label: `Earlier period (${periods.previous.short})` },
+    { value: 'month', label: `Whole month (${periods.month.short})` },
+    { value: 'custom', label: 'Custom dates…' },
+  ]
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title="Accomplishment report" description={`Checked tasks from ${page.title || 'this list'}, as plain text you can paste anywhere.`}>
-      <div className="space-y-3 px-5 py-3">
-        <div className="flex flex-wrap gap-1">
-          {(
-            [
-              ['today', 'Today'],
-              ['yesterday', 'Yesterday'],
-              ['week', 'This week'],
-              ['lastweek', 'Last week'],
-              ['month', 'This month'],
-              ['custom', 'Custom'],
-            ] as [Range, string][]
-          ).map(([k, l]) => (
-            <button key={k} onClick={() => setRange(k)} className={cn('h-7 rounded-md px-2.5 text-sm', range === k ? 'bg-accent text-white' : 'bg-hover text-muted')}>
-              {l}
-            </button>
-          ))}
-        </div>
-        {range === 'custom' && (
-          <div className="flex items-center gap-2 text-sm">
-            <input type="date" value={custom.from} onChange={(e) => setCustom({ ...custom, from: e.target.value })} className="rounded border border-line bg-bg px-2 py-1" />
-            to
-            <input type="date" value={custom.to} onChange={(e) => setCustom({ ...custom, to: e.target.value })} className="rounded border border-line bg-bg px-2 py-1" />
+    <Dialog open={open} onOpenChange={onOpenChange} title="Accomplishment report" description="Turns the tasks you checked off into your work accomplishment report, as a page you can edit and copy into Google Docs.">
+      <div className="space-y-5 px-5 py-4">
+        <div className="flex items-start justify-between gap-4 rounded-lg bg-subtle p-3">
+          <div>
+            <div className="text-sm font-medium">Draft automatically on the 15th and last day of each month</div>
+            <div className="mt-0.5 text-xs text-muted">The draft appears under “Accomplishment reports” in this list. Regenerate it before sending to include the last day's work.</div>
           </div>
-        )}
-        <label className="flex items-center gap-2 text-sm text-muted">
-          <input type="checkbox" checked={byDay} onChange={(e) => setByDay(e.target.checked)} /> Group by day
-        </label>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="No checked tasks in this range."
-          className="h-72 w-full resize-none rounded-md border border-line bg-bg p-3 font-mono text-[13px] leading-relaxed outline-none"
-        />
-      </div>
-      <div className="flex items-center justify-between border-t border-line px-5 py-3">
-        <span className="text-xs text-faint">{tasks.length} completed tasks</span>
-        <div className="flex gap-2">
-          {config?.claudeConfigured && (
-            <button
-              disabled={busy || !tasks.length}
-              onClick={async () => {
-                setBusy(true)
-                try {
-                  setText(await polishReport(text))
-                } catch (e) {
-                  toast((e as Error).message)
-                } finally {
-                  setBusy(false)
-                }
-              }}
-              className="flex h-8 items-center gap-1.5 rounded-md border border-line px-3 text-sm hover:bg-hover disabled:opacity-50"
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Polish with AI
-            </button>
+          <Switch aria-label="Draft automatically" checked={settings.auto} onCheckedChange={(v) => set({ auto: v })} />
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-muted">Period</div>
+          <Select className="w-full" aria-label="Period" value={choice} onValueChange={(v) => setChoice(v as Choice)} options={options} />
+          {choice === 'custom' && (
+            <div className="flex items-center gap-2 text-sm">
+              <DatePicker value={custom.from} onChange={(d) => d && setCustom({ ...custom, from: d })} />
+              to
+              <DatePicker value={custom.to} min={custom.from} onChange={(d) => d && setCustom({ ...custom, to: d })} />
+            </div>
           )}
-          <button
-            onClick={() => {
-              void navigator.clipboard.writeText(text)
-              toast('Copied. Paste it into your CWA document.')
-            }}
-            className="flex h-8 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-medium text-white"
-          >
-            <Copy className="h-4 w-4" /> Copy
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-muted">Group accomplishments</div>
+          <Select
+            className="w-full"
+            aria-label="Grouping"
+            value={settings.grouping}
+            onValueChange={(v) => set({ grouping: v as ReportGrouping })}
+            options={[
+              { value: 'ai', label: config?.claudeConfigured ? 'By project, written up by AI' : 'By project, written up by AI (needs Claude)', disabled: !config?.claudeConfigured },
+              { value: 'parent', label: 'By the task they were under (no AI)' },
+              { value: 'day', label: 'By day (no AI)' },
+            ]}
+          />
+          <CheckboxField
+            label="Leave out routine tasks from the daily template"
+            hint="Like “check emails”. They still count for attendance."
+            checked={settings.skipRoutine}
+            onCheckedChange={(v) => set({ skipRoutine: v })}
+          />
+        </div>
+
+        <div>
+          <button onClick={() => setShowWording((s) => !s)} className="flex items-center gap-1 text-xs font-medium text-muted hover:text-fg">
+            <ChevronRight className={`h-3.5 w-3.5 transition ${showWording ? 'rotate-90' : ''}`} /> Heading and intro
           </button>
+          {showWording && (
+            <div className="mt-2 space-y-2">
+              <Input value={settings.heading} onChange={(e) => set({ heading: e.target.value })} aria-label="Heading" />
+              <Textarea value={settings.intro} onChange={(e) => set({ intro: e.target.value })} className="h-24" aria-label="Intro" />
+              <p className="text-xs text-faint">
+                <code>{'{period}'}</code> becomes “{due.label}” (in bold). <code>{'{absences}'}</code> becomes the weekdays with no finished tasks, or “N/A”.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-line px-5 py-3">
+        <span className="text-xs text-faint">{existing ? 'A report for this period exists; it will be updated.' : ''}</span>
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          <Button variant="primary" disabled={busy} icon={busy ? <Loader2 className="animate-spin" /> : <FileText />} onClick={() => void create()}>
+            {existing ? 'Update report' : 'Create report'}
+          </Button>
         </div>
       </div>
     </Dialog>

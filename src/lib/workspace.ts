@@ -55,6 +55,8 @@ function readPage(id: string, m: PageMap): PageMeta {
     template: base.template as TemplateItem[] | undefined,
     autoStart: base.autoStart as boolean | undefined,
     meeting: base.meeting as PageMeta['meeting'],
+    report: base.report as PageMeta['report'],
+    reportFor: base.reportFor as PageMeta['reportFor'],
     props,
   }
 }
@@ -238,7 +240,7 @@ export class Workspace {
         createdAt: now,
         updatedAt: now,
       }
-      for (const k of ['icon', 'cover', 'db', 'template', 'autoStart', 'meeting', 'fullWidth', 'hiddenFromAI'] as const) {
+      for (const k of ['icon', 'cover', 'db', 'template', 'autoStart', 'meeting', 'fullWidth', 'hiddenFromAI', 'report', 'reportFor'] as const) {
         if (init[k] !== undefined) fields[k] = init[k]
       }
       for (const [k, v] of Object.entries(fields)) m.set(k, v)

@@ -61,6 +61,29 @@ export interface TemplateItem {
   children?: TemplateItem[]
 }
 
+// ---------- Accomplishment reports ----------
+
+export type ReportGrouping = 'ai' | 'parent' | 'day'
+
+export interface ReportSettings {
+  /** Draft a report automatically on the 15th and on the last day of each month. */
+  auto: boolean
+  heading: string
+  /** Intro paragraph; {period} and {absences} are filled in. */
+  intro: string
+  /** Leave out tasks that came from the daily template (check emails, …). */
+  skipRoutine: boolean
+  grouping: ReportGrouping
+  /** Start date of the last period that was drafted automatically. */
+  lastAuto?: string
+}
+
+export interface ReportFor {
+  listId: string
+  from: string
+  to: string
+}
+
 // ---------- Meetings ----------
 
 export interface MeetingInfo {
@@ -100,6 +123,10 @@ export interface PageMeta {
   autoStart?: boolean
   /** For kind === 'meeting'. */
   meeting?: MeetingInfo
+  /** For TODO lists: accomplishment report settings. */
+  report?: ReportSettings
+  /** For generated report pages: which list and period they cover. */
+  reportFor?: ReportFor
 }
 
 // ---------- AI memory & graph ----------
