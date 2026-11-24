@@ -13,3 +13,8 @@ __unconfig*
 todos.json
 .dev.vars
 worker-configuration.d.ts
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/

@@ -26,7 +26,9 @@ export function ReportToolbar({ page, editor }: { page: PageMeta; editor: Editor
         disabled={!editor}
         onClick={async () => {
           if (!editor) return
-          await copyRich(editor.getHTML(), editor.getText({ blockSeparator: '\n' }).replace(/\n{3,}/g, '\n\n'))
+          // Plain <li>text</li> pastes into Google Docs without extra blank lines.
+          const html = editor.getHTML().replace(/<li><p>/g, '<li>').replace(/<\/p><\/li>/g, '</li>').replace(/(<p><\/p>)+$/, '')
+          await copyRich(html, editor.getText({ blockSeparator: '\n' }).replace(/\n{3,}/g, '\n\n'))
           toast('Copied. Paste into your Google Doc. Bold and bullets are kept.')
         }}
       >

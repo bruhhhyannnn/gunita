@@ -20,5 +20,14 @@
   "vars": {
     "APP_NAME": "Gunita"
     // "APP_URL": "https://gunita.<your-subdomain>.workers.dev"
+  },
+  // Used only by the end-to-end tests (CLOUDFLARE_ENV=e2e): a separate local
+  // database and bucket, with settings from .dev.vars.e2e (no real keys).
+  "env": {
+    "e2e": {
+      "d1_databases": [{ "binding": "DB", "database_name": "gunita-e2e", "database_id": "e2e-local", "migrations_dir": "migrations" }],
+      "r2_buckets": [{ "binding": "FILES", "bucket_name": "gunita-e2e-files" }],
+      "vars": { "APP_NAME": "Gunita" }
+    }
   }
 }

@@ -54,6 +54,19 @@ pnpm typecheck
 pnpm build && pnpm preview   # production build, with the offline service worker
 ```
 
+## Tests
+
+End-to-end tests live in `e2e/` and use Playwright. They start their own dev server on port 3100, with a separate local database and a fake Claude server, so they never touch your data or your API key.
+
+```bash
+pnpm exec playwright install chromium   # once
+pnpm test:e2e                           # all tests
+pnpm test:e2e e2e/todo.spec.ts          # one file
+pnpm test:e2e:ui                        # watch them run
+```
+
+They also run on GitHub Actions for every push (`.github/workflows/e2e.yml`).
+
 ## Deploy to Cloudflare
 
 You need a Cloudflare account. The free plan is enough to start.
@@ -165,4 +178,8 @@ Cloudflare Worker (TanStack Start)
 
 ## Importing from Notion
 
-In Notion, open *Settings → Export* and choose **Markdown & CSV**, including sub-pages. An importer for that zip is next on the list.
+In Notion, open *Settings → Export*, choose **Markdown & CSV** and include sub-pages. Then in Gunita open **Settings → Import from Notion** and choose the zip.
+
+- Pages keep their nesting, formatting, images and files. Databases keep their rows, with property types worked out from the CSV.
+- Pages with dated sections (like a daily TODO page) can become TODO lists: one day per date, and a daily template made from the tasks that repeat. By default only the latest day's unfinished tasks are carried into today; older ones are kept but marked "not carried over".
+- Everything goes into an "Imported from Notion" page, so you can move or delete it in one go. You need to be online while importing so files can upload.

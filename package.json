@@ -11,6 +11,8 @@
     "preview": "vite preview",
     "deploy": "pnpm run build && wrangler deploy",
     "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "db:migrate:local": "wrangler d1 migrations apply gunita --local",
     "db:migrate:remote": "wrangler d1 migrations apply gunita --remote",
     "tauri": "tauri",
@@ -70,6 +72,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.26.0",
     "@cloudflare/workers-types": "^5.20261121.1",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "^4.3.5",
     "@tauri-apps/cli": "^2.12.6",
     "@types/node": "^22.10.2",

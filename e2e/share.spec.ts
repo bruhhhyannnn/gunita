@@ -1,0 +1,41 @@
+import { test, expect, login, newPage } from './fixtures'
+
+test('a public link shows the page and its sub-pages to anyone', async ({ page, browser }) => {
+  await login(page, 'share')
+  await newPage(page, 'Book of Knowledge')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Notes from my courses. <script>alert(1)</script> ')
+  await page.keyboard.press('Control+b')
+  await page.keyboard.type('bold')
+  await page.keyboard.press('Control+b')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/page')
+  await expect(page.getByText('Sub-page').or(page.getByText('Page', { exact: true })).first()).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('main textarea')).toBeFocused()
+  await page.keyboard.type('AWS Made Easy')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('EC2 lets you rent virtual machines.')
+  await page.waitForTimeout(1500)
+
+  await page.locator('aside').getByText('Book of Knowledge', { exact: true }).click()
+  await page.locator('main').getByRole('button', { name: 'Share' }).first().click()
+  await page.getByRole('switch').click()
+  const link = page.locator('input[readonly]')
+  await expect(link).toHaveValue(/\/s\//)
+  const url = await link.inputValue()
+
+  // Someone who isn't signed in.
+  const anon = await browser.newContext()
+  const ap = await anon.newPage()
+  const res = await ap.goto(url)
+  expect(res?.status()).toBe(200)
+  await expect(ap).toHaveTitle(/Book of Knowledge/)
+  await expect(ap.locator('strong')).toHaveText('bold')
+  expect(await ap.content()).not.toContain('<script>alert(1)')
+  await ap.getByText('AWS Made Easy').click()
+  await expect(ap.locator('main')).toContainText('EC2 lets you rent virtual machines.')
+  // Pages outside the shared tree aren't reachable through the link.
+  expect((await ap.goto(url + '/doesnotexist'))?.status()).toBe(404)
+  await anon.close()
+})

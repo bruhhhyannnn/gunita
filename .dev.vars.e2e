@@ -1,0 +1,6 @@
+# Settings for the end-to-end tests only (pnpm test:e2e). Not secrets.
+# Claude calls go to the fake server in e2e/mock-anthropic.mjs.
+DEV_LOGIN=true
+SESSION_SECRET=e2e-tests-only-not-a-secret-0123456789abcdef
+ANTHROPIC_API_KEY=e2e-test-key
+ANTHROPIC_BASE_URL=http://127.0.0.1:8788
