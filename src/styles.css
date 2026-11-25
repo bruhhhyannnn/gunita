@@ -412,6 +412,9 @@ button {
    (Each day is wrapped in a .node-todoDay element by the editor.) */
 .gunita-editor > .node-todoDay {
   margin: 3.5em 0 1.25em;
+  /* Days scrolled out of view aren't laid out on every keystroke: long lists stay fast. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
 }
 .gunita-editor > .node-todoDay:first-child {
   margin-top: 1em;

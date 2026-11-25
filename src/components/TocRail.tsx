@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/react'
-import { useEffect, useState, type RefObject } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { cn } from './ui/cn'
 
 interface Heading {
@@ -12,21 +12,42 @@ interface Heading {
 export function TocRail({ editor, scroller }: { editor: Editor; scroller: RefObject<HTMLDivElement | null> }) {
   const [headings, setHeadings] = useState<Heading[]>([])
   const [active, setActive] = useState(0)
+  // Latest positions of the headings (they move as you type above them).
+  const positions = useRef<number[]>([])
 
   useEffect(() => {
+    let last = ''
     const read = () => {
       const hs: Heading[] = []
       editor.state.doc.descendants((node, pos) => {
         if (node.type.name === 'heading') hs.push({ level: node.attrs.level, text: node.textContent, pos })
-        if (node.type.name === 'todoDay') hs.push({ level: 2, text: node.attrs.label || node.attrs.date, pos })
+        if (node.type.name === 'todoDay') {
+          hs.push({ level: 2, text: node.attrs.label || node.attrs.date, pos })
+          return false // days hold tasks, not headings
+        }
         return node.type.name !== 'heading'
       })
+      // Only re-render when the headings themselves changed, not on every keystroke.
+      const sig = hs.map((h) => `${h.level}:${h.text}`).join('\n')
+      if (sig === last) {
+        positions.current = hs.map((h) => h.pos)
+        return
+      }
+      last = sig
+      positions.current = hs.map((h) => h.pos)
       setHeadings(hs)
     }
     read()
-    editor.on('update', read)
+    // Read after typing pauses: on long pages this walks the whole document.
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const onUpdate = () => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(read, 400)
+    }
+    editor.on('update', onUpdate)
     return () => {
-      editor.off('update', read)
+      if (timer) clearTimeout(timer)
+      editor.off('update', onUpdate)
     }
   }, [editor])
 
@@ -36,7 +57,7 @@ export function TocRail({ editor, scroller }: { editor: Editor; scroller: RefObj
     const onScroll = () => {
       let idx = 0
       headings.forEach((h, i) => {
-        const dom = editor.view.nodeDOM(h.pos) as HTMLElement | null
+        const dom = editor.view.nodeDOM(positions.current[i] ?? h.pos) as HTMLElement | null
         if (dom && dom.getBoundingClientRect().top < 140) idx = i
       })
       setActive(idx)
@@ -46,8 +67,8 @@ export function TocRail({ editor, scroller }: { editor: Editor; scroller: RefObj
   }, [editor, headings, scroller])
 
   if (headings.length < 2) return null
-  const go = (h: Heading) => {
-    const dom = editor.view.nodeDOM(h.pos) as HTMLElement | null
+  const go = (h: Heading, i: number) => {
+    const dom = editor.view.nodeDOM(positions.current[i] ?? h.pos) as HTMLElement | null
     dom?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
   return (
@@ -65,7 +86,7 @@ export function TocRail({ editor, scroller }: { editor: Editor; scroller: RefObj
         {headings.map((h, i) => (
           <button
             key={i}
-            onClick={() => go(h)}
+            onClick={() => go(h, i)}
             className={cn('block w-full truncate rounded px-2 py-1 text-left text-[13px] hover:bg-hover', i === active ? 'text-accent' : 'text-muted')}
             style={{ paddingLeft: 8 + (h.level - 1) * 12 }}
           >
