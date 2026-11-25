@@ -117,7 +117,7 @@ export function PageHistory({ page, open, onOpenChange }: { page: PageMeta; open
       <div className="flex h-[min(60vh,520px)] min-h-0 border-t border-line">
         <div className="w-52 flex-none overflow-y-auto border-r border-line p-2" role="listbox" aria-label="Saved versions">
           {!versions && !error && <p className="p-2 text-sm text-faint">Loading…</p>}
-          {versions?.length === 0 && <p className="p-2 text-sm text-faint">No saved versions yet. The first one is kept tomorrow, before you change this page.</p>}
+          {versions?.length === 0 && <p className="p-2 text-sm text-faint">No saved versions yet. One is saved the next time you change this page, then once a day.</p>}
           {versions?.map((v) => (
             <button
               key={v.day}
