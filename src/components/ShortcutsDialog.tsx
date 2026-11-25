@@ -46,6 +46,7 @@ function groups(): Group[] {
       title: 'TODO lists',
       items: [
         ['Tab  on an empty task', "Add the next of today's suggested tasks"],
+        ['/sections', 'Split days into Work, Personal… (what counts for the report)'],
         ['⋯  on a task', 'Move to today, a section, Someday; snooze; drop; focus on it'],
       ],
     },

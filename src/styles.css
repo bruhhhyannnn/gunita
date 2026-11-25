@@ -408,15 +408,20 @@ button {
 }
 
 /* ---------- TODO lists ---------- */
-.todo-day {
-  margin: 18px 0 6px;
+/* Room between days, so each one reads as its own block. In em, so it grows with the text size.
+   (Each day is wrapped in a .node-todoDay element by the editor.) */
+.gunita-editor > .node-todoDay {
+  margin: 3.5em 0 1.25em;
+}
+.gunita-editor > .node-todoDay:first-child {
+  margin-top: 1em;
 }
 .todo-day-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 0 6px;
-  margin-bottom: 4px;
+  padding: 0.35em 0 0.55em;
+  margin-bottom: 0.9em;
   border-bottom: 1px solid var(--border);
   user-select: none;
 }
@@ -451,6 +456,9 @@ button {
 }
 .todo-day-progress.is-done { color: #2e9f6b; }
 .todo-day.is-today .todo-day-header { border-bottom-color: var(--accent); }
+.todo-day-body { padding-bottom: 0.25em; }
+/* A little air between tasks inside a day. */
+.todo-day ul[data-type='taskList'] > li { padding: 0.15em 0; }
 
 .task-note {
   display: inline-block;
@@ -528,7 +536,8 @@ button {
 .section-chip.is-empty { color: var(--text-faint); background: none; border: 1px dashed var(--border); line-height: 16px; }
 
 /* ---------- Sections inside a TODO day (Work, Personal, …) ---------- */
-.todo-section { margin: 10px 0 6px; }
+.node-todoSection { margin: 1.5em 0 0.5em; }
+.todo-day-body .node-todoSection:first-child { margin-top: 0.25em; }
 .todo-section-header {
   display: flex;
   align-items: center;

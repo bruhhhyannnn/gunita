@@ -7,8 +7,14 @@ test('Work and Personal sections: carry-over keeps them, the report only uses Wo
   await login(page, 'sections')
   await createTodoList(page)
 
-  // Set up the two sections; today's tasks and the template go into Work.
-  await page.getByRole('button', { name: 'Sections', exact: true }).click()
+  // Set up the two sections from the "/" menu (there's no toolbar button);
+  // today's tasks and the template go into Work.
+  await expect(page.getByRole('button', { name: 'Sections', exact: true })).toHaveCount(0)
+  await cursorAtEnd(page, 'add things on CWA')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/sections')
+  await expect(page.getByText('Split days into Work, Personal')).toBeVisible()
+  await page.keyboard.press('Enter')
   const dialog = page.getByRole('dialog')
   await dialog.getByRole('button', { name: /Add 💼 Work and 🏠 Personal/ }).click()
   await expect(dialog.getByTestId('section-row')).toHaveCount(2)
@@ -21,6 +27,9 @@ test('Work and Personal sections: carry-over keeps them, the report only uses Wo
   await expect(work.locator('.todo-section-badge')).toHaveText(/In report/)
   await expect(work).toContainText('check emails')
   await expect(personal.locator('li')).toHaveCount(1) // one blank task to type in
+
+  // The blank line "/sections" was typed on is gone.
+  await expect(work.locator('li')).toHaveCount(3)
 
   // Work task, then a personal one moved down into Personal with Alt+↓.
   await checkbox(page, 'check emails').click()

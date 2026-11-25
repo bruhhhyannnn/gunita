@@ -20,6 +20,7 @@ import {
   Table,
   Table2,
   Type,
+  LayoutList,
 } from 'lucide-react'
 import { getApp } from '#/lib/app'
 import { createPageOfKind } from '#/lib/actions'
@@ -27,6 +28,7 @@ import { addDays, isoDate, relativeDate, shortDate } from '#/lib/dates'
 import { PageIcon } from '#/components/PageIcon'
 import { suggestionRenderer, type SuggestItem } from './suggest'
 import { pickAndUploadImage } from './uploads'
+import { SECTIONS_EVENT } from '#/todo/todoSection'
 
 export interface EditorContext {
   pageId: string
@@ -123,6 +125,28 @@ function slashItems(editor: Editor, ctx: EditorContext): (SuggestItem & { keywor
       run: () => chain().insertContent([{ type: 'dateChip', attrs: { date: isoDate() } }, { type: 'text', text: ' ' }]).run(),
     },
   ]
+  // TODO lists: set up the sections each day is split into (Work, Personal…). Listed first there.
+  if (getApp().ws.page(ctx.pageId)?.kind === 'todo') {
+    items.unshift({
+      id: 'sections',
+      group: 'TODO list',
+      title: 'Sections',
+      subtitle: 'Split days into Work, Personal… and pick what goes in the report',
+      keywords: 'section work personal group report category',
+      icon: <LayoutList />,
+      run: () => {
+        chain().run()
+        // Typed on a new, empty task: don't leave that blank task behind.
+        const { $from } = editor.state.selection
+        const item = $from.depth > 1 ? $from.node($from.depth - 1) : null
+        if (!$from.parent.content.size && item?.type.name === 'taskItem' && item.childCount === 1 && $from.node($from.depth - 2).childCount > 1) {
+          const pos = $from.before($from.depth - 1)
+          editor.view.dispatch(editor.state.tr.delete(pos, pos + item.nodeSize))
+        }
+        window.dispatchEvent(new CustomEvent(SECTIONS_EVENT, { detail: { pageId: ctx.pageId } }))
+      },
+    })
+  }
   return items.map((it) => ({ ...it, run: wrap(it.run) }))
 }
 

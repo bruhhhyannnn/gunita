@@ -1,6 +1,6 @@
 import type { Editor } from '@tiptap/react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { FileText, LayoutList, ListChecks, Settings2, Sun } from 'lucide-react'
+import { FileText, ListChecks, Settings2, Sun } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { getApp, useIndexVersion, useWs } from '#/lib/app'
 import { isoDate } from '#/lib/dates'
@@ -46,7 +46,7 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
     }
   }, [editor, page, inbox])
 
-  // The "Edit" button on a section's header opens the sections dialog.
+  // "/sections" in the editor, a section's "Edit" button and the report dialog open the sections dialog.
   useEffect(() => {
     const on = (e: Event) => {
       if ((e as CustomEvent<{ pageId: string }>).detail.pageId === page.id) setSectionsOpen(true)
@@ -99,9 +99,6 @@ export function TodoToolbar({ page, editor }: { page: PageMeta; editor: Editor |
         </Button>
         <Button variant="ghost" icon={<Settings2 />} onClick={() => setTemplateOpen(true)}>
           Template
-        </Button>
-        <Button variant="ghost" icon={<LayoutList />} onClick={() => setSectionsOpen(true)}>
-          Sections
         </Button>
         <Button variant="ghost" icon={<FileText />} onClick={() => setReportOpen(true)}>
           Report
