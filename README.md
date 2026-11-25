@@ -24,6 +24,7 @@ The full product spec and milestones are in [docs/PLAN.md](docs/PLAN.md).
 | Meetings | Meeting template, **Finish meeting** (summary, decisions, action items), text extraction from slide photos and PDFs, live transcript, Google Calendar |
 | Brain | 3D graph shaped like a brain (or 2D), timeline replay, AI-suggested links you confirm, editable Memory |
 | Offline | Everything is stored on the device and syncs when online. Conflicts merge automatically (Yjs) |
+| Page history | A copy of each page is kept once a day (before the first change that day) for 30 days. Page ⋯ menu → **Page history** to preview and restore; Ctrl+Z undoes a restore |
 | Sharing | Read-only public links for a page and its sub-pages. Export everything as Markdown and CSV |
 
 ### Keyboard shortcuts

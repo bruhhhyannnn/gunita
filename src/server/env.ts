@@ -15,6 +15,8 @@ export interface Env {
   ANTHROPIC_BASE_URL?: string
   /** Used to encrypt stored Google refresh tokens. Any long random string. */
   SESSION_SECRET?: string
+  /** Testing only: store page data over this many bytes in R2 (default 1 MB). */
+  SYNC_INLINE_MAX?: string
   /** Set to "true" in .dev.vars to enable the passwordless local login. Never set in production. */
   DEV_LOGIN?: string
 }

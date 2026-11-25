@@ -166,17 +166,25 @@ export class SyncEngine {
     }
     this.running = true
     this.firstEditAt = 0
+    let ok = false
     this.update({ status: 'syncing' })
     try {
       let cursor = await this.readCursor()
+      // Each doc goes at most once per run. Edits made while a request is in
+      // flight wait for the normal debounce (scheduleEdit) instead of being
+      // pushed right after: with a slow connection that would mean pushing
+      // back to back for as long as you type.
+      const sent = new Set<string>()
       let first = true
-      while (first || this.dirty.size || this.pull.size) {
-        first = false
+      for (;;) {
         // The workspace doc goes first: it holds the page tree.
-        const ids = [...new Set([...this.dirty, ...this.pull])].sort((a, b) =>
-          a === 'workspace' ? -1 : b === 'workspace' ? 1 : 0,
-        )
+        const ids = [...new Set([...this.dirty, ...this.pull])]
+          .filter((id) => !sent.has(id))
+          .sort((a, b) => (a === 'workspace' ? -1 : b === 'workspace' ? 1 : 0))
+        if (!first && !ids.length) break
+        first = false
         const batch = ids.slice(0, BATCH)
+        batch.forEach((id) => sent.add(id))
         const editMarks = new Map(batch.map((id) => [id, this.edits.get(id) ?? 0]))
         const reqDocs = await Promise.all(
           batch.map((id) =>
@@ -226,13 +234,17 @@ export class SyncEngine {
         if (remoteChanged.length) this.onRemoteChange?.(remoteChanged)
       }
       this.update({ status: 'idle', lastSyncedAt: Date.now(), error: undefined })
+      ok = true
     } catch (e) {
       this.update({ status: navigator.onLine ? 'error' : 'offline', error: (e as Error).message })
     } finally {
       this.running = false
-      if (this.again) {
-        this.again = false
-        this.schedule(500)
+      const asked = this.again
+      this.again = false
+      // After an error, wait for the regular check (every 20 s) or coming back online.
+      if (ok) {
+        if (this.pull.size || asked) this.schedule(this.dirty.size && !this.pull.size ? PUSH_IDLE : 500)
+        else if (this.dirty.size) this.scheduleEdit()
       }
     }
   }

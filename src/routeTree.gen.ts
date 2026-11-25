@@ -16,6 +16,7 @@ import { Route as AppBrainRouteImport } from './routes/_app/brain'
 import { Route as AppFocusRouteImport } from './routes/_app/focus'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
+import { Route as ApiHistoryRouteImport } from './routes/api/history'
 import { Route as ApiMeRouteImport } from './routes/api/me'
 import { Route as ApiShareRouteImport } from './routes/api/share'
 import { Route as ApiSyncRouteImport } from './routes/api/sync'
@@ -68,6 +69,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
 const ApiFilesRoute = ApiFilesRouteImport.update({
   id: '/api/files',
   path: '/api/files',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHistoryRoute = ApiHistoryRouteImport.update({
+  id: '/api/history',
+  path: '/api/history',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMeRoute = ApiMeRouteImport.update({
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/focus': typeof AppFocusRoute
   '/settings': typeof AppSettingsRoute
   '/api/files': typeof ApiFilesRoute
+  '/api/history': typeof ApiHistoryRoute
   '/api/me': typeof ApiMeRoute
   '/api/share': typeof ApiShareRoute
   '/api/sync': typeof ApiSyncRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/focus': typeof AppFocusRoute
   '/settings': typeof AppSettingsRoute
   '/api/files': typeof ApiFilesRoute
+  '/api/history': typeof ApiHistoryRoute
   '/api/me': typeof ApiMeRoute
   '/api/share': typeof ApiShareRoute
   '/api/sync': typeof ApiSyncRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/_app/focus': typeof AppFocusRoute
   '/_app/settings': typeof AppSettingsRoute
   '/api/files': typeof ApiFilesRoute
+  '/api/history': typeof ApiHistoryRoute
   '/api/me': typeof ApiMeRoute
   '/api/share': typeof ApiShareRoute
   '/api/sync': typeof ApiSyncRoute
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/focus'
     | '/settings'
     | '/api/files'
+    | '/api/history'
     | '/api/me'
     | '/api/share'
     | '/api/sync'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/focus'
     | '/settings'
     | '/api/files'
+    | '/api/history'
     | '/api/me'
     | '/api/share'
     | '/api/sync'
@@ -312,6 +323,7 @@ export interface FileRouteTypes {
     | '/_app/focus'
     | '/_app/settings'
     | '/api/files'
+    | '/api/history'
     | '/api/me'
     | '/api/share'
     | '/api/sync'
@@ -338,6 +350,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiFilesRoute: typeof ApiFilesRoute
+  ApiHistoryRoute: typeof ApiHistoryRoute
   ApiMeRoute: typeof ApiMeRoute
   ApiShareRoute: typeof ApiShareRoute
   ApiSyncRoute: typeof ApiSyncRoute
@@ -407,6 +420,13 @@ declare module '@tanstack/react-router' {
       path: '/api/files'
       fullPath: '/api/files'
       preLoaderRoute: typeof ApiFilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/history': {
+      id: '/api/history'
+      path: '/api/history'
+      fullPath: '/api/history'
+      preLoaderRoute: typeof ApiHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/me': {
@@ -567,6 +587,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiFilesRoute: ApiFilesRoute,
+  ApiHistoryRoute: ApiHistoryRoute,
   ApiMeRoute: ApiMeRoute,
   ApiShareRoute: ApiShareRoute,
   ApiSyncRoute: ApiSyncRoute,

@@ -13,6 +13,7 @@ import {
   Trash2,
   Undo2,
   Redo2,
+  History,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Editor } from '@tiptap/react'
@@ -37,6 +38,7 @@ import { TodoToolbar } from './todo/TodoToolbar'
 import { MeetingPanel } from './meeting/MeetingPanel'
 import { ReportToolbar } from './todo/ReportToolbar'
 import { SharePopover } from './SharePopover'
+import { PageHistory } from './PageHistory'
 import { aiExtensions } from '#/ai/extensions'
 import { useDocumentTitle } from '#/lib/title'
 import { runUndo, useUndoState } from '#/lib/undo'
@@ -138,6 +140,7 @@ function UndoButtons() {
 }
 
 function TopBar({ page }: { page: PageMeta }) {
+  const [historyOpen, setHistoryOpen] = useState(false)
   const openPage = useOpenPage()
   const navigate = useNavigate()
   const ancestors = useWs(() => getApp().ws.ancestors(page.id))
@@ -156,6 +159,7 @@ function TopBar({ page }: { page: PageMeta }) {
       </div>
       <span className="mr-2 hidden text-xs text-faint sm:inline">Edited {timeAgo(page.updatedAt)}</span>
       <UndoButtons />
+      <PageHistory page={page} open={historyOpen} onOpenChange={setHistoryOpen} />
       <SharePopover page={page} />
       <IconBtn title={page.favorite ? 'Remove from favorites' : 'Add to favorites'} onClick={() => getApp().ws.updatePage(page.id, { favorite: page.favorite ? undefined : true })}>
         <Star className={cn('h-4 w-4', page.favorite && 'fill-[#e9a800] text-[#e9a800]')} />
@@ -188,6 +192,11 @@ function TopBar({ page }: { page: PageMeta }) {
           <MenuItem icon={<Download />} onSelect={() => void exportPageMarkdown(page.id)}>
             Export as Markdown
           </MenuItem>
+          {page.kind !== 'database' && (
+            <MenuItem icon={<History />} onSelect={() => setHistoryOpen(true)}>
+              Page history
+            </MenuItem>
+          )}
           <MenuSeparator />
           <MenuItem
             icon={<Trash2 />}

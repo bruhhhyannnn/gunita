@@ -6,6 +6,12 @@ test('typing is pushed in a few debounced requests, and reaches another device',
   await page.keyboard.press('Enter')
   await page.waitForTimeout(3000) // let the first sync after creating the page finish
 
+  // A slow connection: each sync request takes 600 ms. Edits made while one is
+  // in flight must still wait for the debounce, not go right after it.
+  await page.route('**/api/sync', async (r) => {
+    await new Promise((res) => setTimeout(res, 600))
+    await r.continue()
+  })
   const pushes: number[] = []
   page.on('request', (r) => {
     if (r.url().endsWith('/api/sync') && r.method() === 'POST' && (r.postData() ?? '').includes('"update"')) pushes.push(Date.now())

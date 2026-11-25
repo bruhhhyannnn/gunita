@@ -1,6 +1,8 @@
 # Settings for the end-to-end tests only (pnpm test:e2e). Not secrets.
 # Claude calls go to the fake server in e2e/mock-anthropic.mjs.
+# SYNC_INLINE_MAX: page data over 4 KB goes to R2, so the tests cover that path too.
 DEV_LOGIN=true
 SESSION_SECRET=e2e-tests-only-not-a-secret-0123456789abcdef
 ANTHROPIC_API_KEY=e2e-test-key
 ANTHROPIC_BASE_URL=http://127.0.0.1:8788
+SYNC_INLINE_MAX=4096
