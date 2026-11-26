@@ -20,7 +20,7 @@ export function UpdateBanner() {
     location.reload()
   }
   return (
-    <div role="status" className="animate-pop fixed bottom-4 left-4 z-40 flex max-w-[calc(100vw-2rem)] items-center gap-3 rounded-xl border border-line bg-popover py-2 pl-4 pr-2 text-sm shadow-pop">
+    <div role="status" className="animate-pop fixed bottom-4 left-4 z-40 flex max-md:bottom-24 max-w-[calc(100vw-2rem)] items-center gap-3 rounded-xl border border-line bg-popover py-2 pl-4 pr-2 text-sm shadow-pop">
       <RefreshCw className="h-4 w-4 flex-none text-accent" />
       <span>A new version of Gunita is ready.</span>
       <Button size="sm" variant="primary" onClick={() => void reload()}>

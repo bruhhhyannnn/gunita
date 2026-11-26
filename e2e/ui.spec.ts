@@ -86,3 +86,22 @@ test('Settings shows the version and the offline copy', async ({ page }) => {
   await expect(page.getByText('You have the latest version.')).toBeVisible()
   await expect(page.getByText('Offline copy on this device')).toBeVisible()
 })
+
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
+  test('main screens fit the screen and Settings stacks', async ({ page }) => {
+    await login(page, 'phone')
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+    expect(await fits()).toBe(true)
+    await page.goto('/focus')
+    await expect(page.getByRole('button', { name: 'Start focus' })).toBeVisible()
+    expect(await fits()).toBe(true)
+    await page.goto('/settings')
+    const label = page.getByText('Text size', { exact: true })
+    await expect(label).toBeVisible()
+    expect(await fits()).toBe(true)
+    // The label isn't squeezed into a narrow column next to the slider.
+    expect((await label.boundingBox())!.width).toBeGreaterThan(60)
+    expect((await page.getByText(/How big page text is/).boundingBox())!.width).toBeGreaterThan(250)
+  })
+})

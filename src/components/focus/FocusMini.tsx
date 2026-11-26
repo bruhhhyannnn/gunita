@@ -50,7 +50,8 @@ export function FocusPill() {
       tabIndex={0}
       onClick={() => void navigate({ to: '/focus' })}
       onKeyDown={(e) => e.key === 'Enter' && void navigate({ to: '/focus' })}
-      className="animate-pop fixed bottom-4 right-4 z-40 w-48 cursor-pointer rounded-xl border border-line bg-popover px-3 py-2 shadow-pop"
+      // On phones, above the "+" quick capture button.
+      className="animate-pop fixed bottom-4 right-4 z-40 w-48 cursor-pointer max-md:bottom-24 rounded-xl border border-line bg-popover px-3 py-2 shadow-pop"
       aria-label="Focus timer"
     >
       <MiniBody run={run} now={now} compact />

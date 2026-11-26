@@ -23,12 +23,13 @@ export const Route = createFileRoute('/_app/settings')({ component: SettingsPage
 
 function Row({ title, desc, children }: { title: string; desc?: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-6 border-b border-line py-4">
+    // Side by side on wide screens; on a phone the control goes under its label.
+    <div className="flex flex-col gap-3 border-b border-line py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
       <div className="min-w-0">
         <div className="font-medium">{title}</div>
         {desc && <div className="mt-0.5 text-sm text-muted">{desc}</div>}
       </div>
-      <div className="flex-none">{children}</div>
+      <div className="max-w-full flex-none">{children}</div>
     </div>
   )
 }

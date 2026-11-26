@@ -59,7 +59,7 @@ export function DailyPlan({ page, editor }: { page: PageMeta; editor: Editor }) 
         <Sparkles className="h-4 w-4 text-[#a371f7]" />
         <span className="font-medium">Suggested for today</span>
         {plan.status === 'loading' && <Loader2 className="h-3.5 w-3.5 animate-spin text-faint" />}
-        <span className="text-xs text-faint">Tab on an empty task adds the next one</span>
+        <span className="hidden text-xs text-faint sm:inline">Tab on an empty task adds the next one</span>
         <div className="flex-1" />
         {plan.status === 'ready' && plan.suggestions.length > 1 && (
           <button
