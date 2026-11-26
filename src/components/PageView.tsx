@@ -39,6 +39,7 @@ import { MeetingPanel } from './meeting/MeetingPanel'
 import { ReportToolbar } from './todo/ReportToolbar'
 import { SharePopover } from './SharePopover'
 import { PageHistory } from './PageHistory'
+import { FocusButton } from './focus/FocusButton'
 import { aiExtensions } from '#/ai/extensions'
 import { useDocumentTitle } from '#/lib/title'
 import { runUndo, useUndoState } from '#/lib/undo'
@@ -159,6 +160,7 @@ function TopBar({ page }: { page: PageMeta }) {
       </div>
       <span className="mr-2 hidden text-xs text-faint sm:inline">Edited {timeAgo(page.updatedAt)}</span>
       <UndoButtons />
+      <FocusButton />
       <PageHistory page={page} open={historyOpen} onOpenChange={setHistoryOpen} />
       <SharePopover page={page} />
       <IconBtn title={page.favorite ? 'Remove from favorites' : 'Add to favorites'} onClick={() => getApp().ws.updatePage(page.id, { favorite: page.favorite ? undefined : true })}>

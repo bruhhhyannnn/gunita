@@ -32,14 +32,34 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Updates are signed so the app only installs ones that come from you.
+      # Settings -> Secrets and variables -> Actions: TAURI_SIGNING_PRIVATE_KEY and
+      # TAURI_SIGNING_PRIVATE_KEY_PASSWORD (see README, "Desktop app").
+      - name: Check the signing key is set up
+        shell: bash
+        env:
+          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::Add the TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD secrets first (README, Desktop app)."
+            exit 1
+          fi
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          # latest.json: what installed apps check for updates.
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true
           tagName: desktop-v__VERSION__
           releaseName: Gunita for Windows v__VERSION__
           releaseBody: |
-            Download **Gunita_*_x64-setup.exe** below and run it. It installs just for you (no admin needed).
+            Already have Gunita 0.3.0 or newer? It updates itself: you'll be asked to restart when this version is ready.
+
+            New install: download **Gunita_*_x64-setup.exe** below and run it. It installs just for you (no admin needed).
             Windows may warn that the app is unrecognized because it isn't code-signed: click **More info → Run anyway**.
           releaseDraft: false
           prerelease: false

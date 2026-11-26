@@ -3,14 +3,16 @@
 //! The app shows the live Gunita website in its own window (so it updates with
 //! every deploy and keeps working offline through the site's service worker) and
 //! adds what a browser tab can't: a tray icon, a global quick-capture hotkey,
-//! opening when Windows starts (on by default), and Google sign-in through your
-//! normal browser.
+//! opening when Windows starts (on by default), updating itself from signed
+//! GitHub releases, and Google sign-in through your normal browser.
 //!
 //! The website gets no native commands. The app talks to it only by dispatching
 //! DOM events (`gunita:capture`, `gunita:navigate`), see `src/lib/desktop.ts`.
 
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+use std::time::Duration;
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use rand::RngCore;
@@ -21,6 +23,8 @@ use tauri::{
     AppHandle, Manager, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt as _};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+use tauri_plugin_updater::{Update, UpdaterExt};
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_opener::OpenerExt;
@@ -205,6 +209,112 @@ fn set_up_autostart(app: &AppHandle) {
     set_pref(app, "autostartSetUp", true);
 }
 
+// ---------- Updates (signed releases on GitHub, see .github/workflows/desktop.yml) ----------
+
+/// A downloaded update waiting for a restart, and whether a check is running.
+#[derive(Default)]
+struct Updates {
+    pending: Mutex<Option<(Update, Vec<u8>)>>,
+    asked: Mutex<Option<String>>,
+    busy: AtomicBool,
+}
+
+/// The tray's "Check for updates…" / "Restart to update" item.
+struct UpdateItem(MenuItem<tauri::Wry>);
+
+fn info(app: &AppHandle, title: &str, text: &str) {
+    app.dialog().message(text).title(title).kind(MessageDialogKind::Info).show(|_| {});
+}
+
+/// Checks GitHub for a newer version and downloads it in the background.
+/// `interactive`: you asked from the tray, so say so if there's nothing new.
+fn check_updates(app: AppHandle, interactive: bool) {
+    if app.state::<Updates>().busy.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    tauri::async_runtime::spawn(async move {
+        let found = match app.updater() {
+            Ok(updater) => updater.check().await,
+            Err(e) => Err(e),
+        };
+        match found {
+            Ok(Some(update)) => {
+                let version = update.version.clone();
+                match update.download(|_, _| {}, || {}).await {
+                    Ok(bytes) => {
+                        *app.state::<Updates>().pending.lock().unwrap() = Some((update, bytes));
+                        if let Some(item) = app.try_state::<UpdateItem>() {
+                            let _ = item.0.set_text(format!("Restart to update to {version}"));
+                        }
+                        ask_to_restart(&app, &version, interactive);
+                    }
+                    Err(e) if interactive => info(&app, "Couldn't download the update", &e.to_string()),
+                    Err(e) => eprintln!("update download failed: {e}"),
+                }
+            }
+            Ok(None) if interactive => info(
+                &app,
+                "Gunita is up to date",
+                &format!("You have the latest version ({}).", app.package_info().version),
+            ),
+            Ok(None) => {}
+            Err(e) if interactive => info(&app, "Couldn't check for updates", &e.to_string()),
+            Err(e) => eprintln!("update check failed: {e}"),
+        }
+        app.state::<Updates>().busy.store(false, Ordering::SeqCst);
+    });
+}
+
+/// "Gunita 0.3.1 is ready. Restart now?" (once per version, unless you asked).
+fn ask_to_restart(app: &AppHandle, version: &str, always: bool) {
+    {
+        let updates = app.state::<Updates>();
+        let mut asked = updates.asked.lock().unwrap();
+        if !always && asked.as_deref() == Some(version) {
+            return;
+        }
+        *asked = Some(version.to_string());
+    }
+    let handle = app.clone();
+    app.dialog()
+        .message(format!(
+            "Gunita {version} is ready to install. Restart now to update? Your notes are safe either way.\n\nLater: it stays in the tray menu as \"Restart to update\"."
+        ))
+        .title("Update ready")
+        .kind(MessageDialogKind::Info)
+        .buttons(MessageDialogButtons::OkCancelCustom("Restart now".into(), "Later".into()))
+        .show(move |restart| {
+            if restart {
+                install_update(&handle);
+            }
+        });
+}
+
+/// Installs the downloaded update. On Windows the installer runs quietly and
+/// opens Gunita again when it's done.
+fn install_update(app: &AppHandle) {
+    let Some((update, bytes)) = app.state::<Updates>().pending.lock().unwrap().take() else {
+        check_updates(app.clone(), true);
+        return;
+    };
+    let _ = app.save_window_state(StateFlags::all());
+    match update.install(bytes) {
+        Ok(()) => app.restart(),
+        Err(e) => info(app, "Couldn't install the update", &e.to_string()),
+    }
+}
+
+/// Checks shortly after start (the network may not be up right at login), then every 6 hours.
+fn schedule_update_checks(app: AppHandle) {
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(20));
+        loop {
+            check_updates(app.clone(), false);
+            std::thread::sleep(Duration::from_secs(6 * 60 * 60));
+        }
+    });
+}
+
 fn build_tray(app: &tauri::App) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Open Gunita", true, None::<&str>)?;
     let capture = MenuItem::with_id(app, "capture", "Quick capture (Ctrl+Shift+Space)", true, None::<&str>)?;
@@ -213,6 +323,8 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
     let autostart = CheckMenuItem::with_id(app, "autostart", "Start with Windows", true, autostart_on, None::<&str>)?;
     let in_tray = pref(app.handle(), "startInTray");
     let tray_start = CheckMenuItem::with_id(app, "trayStart", "Start in the tray (no window)", autostart_on, in_tray, None::<&str>)?;
+    let update = MenuItem::with_id(app, "update", "Check for updates…", true, None::<&str>)?;
+    app.manage(UpdateItem(update.clone()));
     let quit = MenuItem::with_id(app, "quit", "Quit Gunita", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
@@ -224,6 +336,7 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
             &autostart,
             &tray_start,
             &PredefinedMenuItem::separator(app)?,
+            &update,
             &quit,
         ],
     )?;
@@ -243,6 +356,13 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
                 let now = launcher.is_enabled().unwrap_or(!enabled);
                 let _ = autostart.set_checked(now);
                 let _ = tray_start.set_enabled(now);
+            }
+            "update" => {
+                if app.state::<Updates>().pending.lock().unwrap().is_some() {
+                    install_update(app);
+                } else {
+                    check_updates(app.clone(), true);
+                }
             }
             "trayStart" => {
                 let next = !pref(app, "startInTray");
@@ -275,6 +395,9 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec![AT_LOGIN])))
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
+        .manage(Updates::default())
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 // Remember size and position, but let --hidden decide visibility.
@@ -329,6 +452,7 @@ pub fn run() {
             });
 
             build_tray(app)?;
+            schedule_update_checks(app.handle().clone());
 
             let capture = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::Space);
             app.handle().plugin(

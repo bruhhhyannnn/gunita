@@ -140,7 +140,8 @@ You need a Cloudflare account. The free plan is enough to start.
 `src-tauri/` holds a small [Tauri](https://tauri.app) app. It opens the live site in its own window, so it updates whenever you deploy, works offline, and doesn't count toward your browser's tab limit. On top of the website it adds:
 
 - opens when Windows starts (on by default; turn it off, or have it start in the tray without a window, from the tray icon)
-- a tray icon (Open, Quick capture, Start today, Start with Windows, Start in the tray, Quit)
+- updates itself from signed GitHub releases (and "Check for updates…" in the tray)
+- a tray icon (Open, Quick capture, Start today, Start with Windows, Start in the tray, Check for updates, Quit)
 - **Ctrl+Shift+Space** for Quick capture from any app
 - close-to-tray, so the hotkey keeps working
 - remembered window size and position
@@ -148,7 +149,14 @@ You need a Cloudflare account. The free plan is enough to start.
 
 **Google sign-in.** Google blocks sign-in inside apps, so the app opens your browser instead. When you're signed in there, the browser asks to open Gunita, and you're signed in. A one-time code plus a secret that only the app holds (`/api/auth/desktop`) keeps that handoff safe.
 
-**Get the installer.** On GitHub, go to **Actions → Desktop app (Windows) → Run workflow**, or push a tag like `desktop-v0.1.0`. After about 10–15 minutes, the installer appears under **Releases**.
+**Get the installer.** On GitHub, go to **Actions → Desktop app (Windows) → Run workflow**, or push a tag like `desktop-v0.1.0`. After about 5–15 minutes, the installer appears under **Releases**.
+
+**Updates.** Most changes are to the website, and the app shows them as soon as you deploy. When the app itself changes (`src-tauri/`), bump `version` in `src-tauri/tauri.conf.json` and run the workflow: from 0.3.0 on, installed apps find the new release (`latest.json`), download it in the background and ask to restart (or use the tray's "Restart to update"). Releases are signed; the workflow needs two repository secrets (Settings → Secrets and variables → Actions):
+
+- `TAURI_SIGNING_PRIVATE_KEY`: the private key file's contents
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: its password
+
+The matching public key is in `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). Keep the private key and password somewhere safe (a password manager): without them, installed apps can't accept updates and would need one manual reinstall with a new key.
 
 **Build it yourself on Windows.** Install Rust from rustup.rs, then:
 

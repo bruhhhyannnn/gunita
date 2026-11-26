@@ -76,3 +76,29 @@ test('focus on a task from the TODO list, then check it off', async ({ page }) =
   await page.locator('aside').getByText('Work TODO', { exact: true }).click()
   await expect.poll(() => dayTasks(page)).toContain('done|check emails')
 })
+
+test('start focus from a page top bar with your saved settings', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-24T09:00:00') })
+  await login(page, 'focusbar')
+  // Save 30 / 5 on the Focus page.
+  await page.locator('aside').getByText('Focus', { exact: true }).click()
+  await page.getByRole('radio', { name: '30 / 5' }).click()
+  await page.locator('aside').getByText('Home', { exact: true }).click()
+  await createTodoList(page)
+
+  await page.getByRole('button', { name: 'Start focus' }).click()
+  await expect(page.getByText('Focus started: 4 × 30 min + 5 min breaks.')).toBeVisible()
+  const timer = page.getByRole('button', { name: 'Focus timer' })
+  await expect(timer).toHaveCount(1) // in the top bar; no extra corner timer on pages
+  await expect(timer).toContainText('30:00')
+  await page.clock.fastForward('02:00')
+  await expect(timer).toContainText('28:00')
+
+  await timer.click()
+  await page.getByRole('menuitem', { name: 'Pause' }).click()
+  await expect(timer).toContainText('⏸ 28:00')
+  await timer.click()
+  await page.getByRole('menuitem', { name: 'Stop' }).click()
+  await page.locator('aside').getByText('Focus', { exact: true }).click()
+  await expect(page.getByText('Session complete', { exact: true })).toBeVisible()
+})

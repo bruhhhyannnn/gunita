@@ -41,8 +41,9 @@ export function FocusPill() {
   const run = useFocusRun()
   const now = useNow(run?.status === 'running')
   const navigate = useNavigate()
-  const onFocusPage = useRouterState({ select: (s) => s.location.pathname === '/focus' })
-  if (!run || run.status === 'done' || onFocusPage) return null
+  // Pages show the timer in their top bar instead (FocusButton).
+  const hidden = useRouterState({ select: (s) => s.location.pathname === '/focus' || s.location.pathname.startsWith('/p/') })
+  if (!run || run.status === 'done' || hidden) return null
   return (
     <div
       role="button"
